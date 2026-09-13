@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习打卡 · 全阶段规划（校历精确最终版）</title>
+<style>
+/* ============================================================
+   学习打卡 · 校历精确最终版
+   单文件 / 零依赖 / 数据内嵌
+   ============================================================ */
+:root{
+  --primary:#4472C4;
+  --primary-light:#D6E4F0;
+  --primary-dark:#2F5496;
+  --success-bg:#C6EFCE;
+  --success-text:#006100;
+  --warning-bg:#FFEB9C;
+  --warning-text:#9C6500;
+  --buffer-bg:#EDE9FE;
+  --buffer-text:#6D28D9;
+  --buffer-border:#8B5CF6;
+  --current-ring:#F59E0B;
+  --bg:#F5F7FA;
+  --card-bg:#FFFFFF;
+  --text:#1A1A2E;
+  --text-secondary:#6B7280;
+  --border:#E5E7EB;
+  --accent-soft:rgba(68,114,196,0.08);
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 6px rgba(0,0,0,0.07),0 2px 4px rgba(0,0,0,0.06);
+  --radius:12px;
+  --radius-sm:8px;
+  --transition:0.2s ease;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#1A1A2E;
+  --card-bg:#252540;
+  --text:#E5E7EB;
+  --text-secondary:#9CA3AF;
+  --border:#374151;
+  --accent-soft:rgba(68,114,196,0.20);
+  --shadow:0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 6px rgba(0,0,0,0.4);
+  --primary-light:#2F5496;
+  --primary-dark:#9DB8E8;
+  --success-bg:#1B5E20;
+  --success-text:#A5D6A7;
+  --warning-bg:#5D4037;
+  --warning-text:#FFE082;
+  --buffer-bg:#3B2F66;
+  --buffer-text:#C4B5FD;
+  --buffer-border:#7C3AED;
+  --current-ring:#FBBF24;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  min-height:100vh;
+  transition:background var(--transition),color var(--transition);
+}
+
+/* ===== Header ===== */
+.app-header{
+  background:var(--card-bg);
+  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:var(--shadow);
+  transition:background var(--transition);
+}
+.header-inner{
+  max-width:960px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.app-title{
+  font-size:1.1rem;
+  font-weight:700;
+  color:var(--primary);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.app-title .icon{font-size:1.3rem;}
+.theme-toggle{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:6px 12px;
+  cursor:pointer;
+  font-size:0.85rem;
+  color:var(--text-secondary);
+  font-family:var(--font);
+  transition:all var(--transition);
+}
+.theme-toggle:hover{background:var(--primary-light);color:var(--primary);}
+
+/* ===== Global progress banner ===== */
+.global-progress{
+  background:var(--card-bg);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow);
+  transition:background var(--transition);
+}
+.global-progress-inner{padding-top:14px;padding-bottom:14px;}
+.global-progress-inner .progress-grid{margin:0;}
+
+/* ===== Tabs ===== */
+.tab-nav{
+  display:flex;
+  gap:4px;
+  max-width:960px;
+  margin:0 auto;
+  padding:14px 20px 0;
+  flex-wrap:wrap;
+}
+.tab-btn{
+  flex:1;
+  min-width:96px;
+  padding:11px 12px;
+  border:none;
+  background:var(--card-bg);
+  color:var(--text-secondary);
+  font-size:0.88rem;
+  font-weight:600;
+  cursor:pointer;
+  border-radius:var(--radius) var(--radius) 0 0;
+  transition:all var(--transition);
+  border:1px solid var(--border);
+  border-bottom:none;
+  font-family:var(--font);
+}
+.tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.tab-btn:hover:not(.active){background:var(--primary-light);color:var(--primary);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ===== Main Container ===== */
+.main-container{max-width:960px;margin:0 auto;padding:0 20px 40px;}
+
+/* ===== Progress Cards ===== */
+.progress-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px;
+  margin:16px 0;
+}
+.progress-card{
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  padding:14px 18px;
+  box-shadow:var(--shadow);
+  text-align:center;
+  border:1px solid var(--border);
+  transition:all var(--transition);
+}
+.progress-card .value{font-size:1.9rem;font-weight:800;color:var(--primary);line-height:1.2;}
+.progress-card .label{font-size:0.78rem;color:var(--text-secondary);margin-top:2px;}
+.progress-bar-wrap{margin-top:8px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--primary);border-radius:4px;transition:width 0.4s ease;}
+
+/* ===== Stage overview ===== */
+.stage-overview{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px 20px;
+  margin:16px 0;
+  transition:background var(--transition);
+}
+.stage-positioning{
+  font-size:0.82rem;
+  color:var(--text-secondary);
+  background:var(--accent-soft);
+  padding:10px 12px;
+  border-radius:var(--radius-sm);
+  margin-bottom:12px;
+  line-height:1.6;
+}
+.stage-name{font-size:1.15rem;font-weight:800;color:var(--primary);margin-bottom:6px;white-space:pre-line;}
+.stage-time{font-size:0.85rem;color:var(--text-secondary);margin-bottom:6px;}
+.stage-goal{
+  font-size:0.9rem;
+  color:var(--text);
+  background:var(--accent-soft);
+  padding:8px 12px;
+  border-radius:var(--radius-sm);
+  margin-bottom:10px;
+  line-height:1.6;
+}
+.collapsible-btn{
+  background:var(--primary-light);
+  color:var(--primary);
+  border:none;
+  border-radius:var(--radius-sm);
+  padding:6px 14px;
+  font-size:0.85rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all var(--transition);
+  font-family:var(--font);
+}
+.collapsible-btn:hover{filter:brightness(0.96);}
+.cb-arrow{font-size:0.7rem;margin-left:4px;display:inline-block;}
+.adjust-panel{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;}
+.adjust-section h3{font-size:0.85rem;color:var(--primary);margin-bottom:6px;}
+.adjust-section ul{list-style:none;padding-left:0;}
+.adjust-section li{
+  font-size:0.84rem;
+  line-height:1.6;
+  color:var(--text);
+  padding:4px 0;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+.adj-tag{
+  flex-shrink:0;
+  display:inline-block;
+  background:var(--primary);
+  color:#fff;
+  font-size:0.7rem;
+  font-weight:700;
+  padding:1px 8px;
+  border-radius:10px;
+  margin-top:3px;
+  white-space:nowrap;
+}
+.adj-text{flex:1;min-width:0;}
+
+/* ===== Toolbar ===== */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;}
+.toolbar .btn{
+  padding:8px 16px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--card-bg);
+  color:var(--text);
+  cursor:pointer;
+  font-size:0.85rem;
+  font-family:var(--font);
+  transition:all var(--transition);
+  white-space:nowrap;
+  box-shadow:var(--shadow);
+}
+.toolbar .btn:hover{background:var(--primary-light);color:var(--primary);border-color:var(--primary);}
+.toolbar .btn.active-btn{background:var(--primary);color:#fff;border-color:var(--primary);}
+.search-input{
+  flex:1;
+  min-width:160px;
+  padding:8px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--card-bg);
+  color:var(--text);
+  font-size:0.85rem;
+  font-family:var(--font);
+  transition:all var(--transition);
+  box-shadow:var(--shadow);
+}
+.search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--accent-soft);}
+.search-hint{font-size:0.78rem;color:var(--text-secondary);}
+
+/* ===== Week groups ===== */
+.week-group{margin-bottom:12px;}
+.week-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 16px;
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  cursor:pointer;
+  user-select:none;
+  box-shadow:var(--shadow);
+  transition:all var(--transition);
+  border-left:4px solid var(--primary);
+}
+.week-header:hover{box-shadow:var(--shadow-md);}
+.week-header .arrow{transition:transform var(--transition);font-size:0.8rem;color:var(--text-secondary);flex-shrink:0;}
+.week-header.collapsed .arrow{transform:rotate(-90deg);}
+.week-title{font-weight:700;font-size:0.95rem;white-space:nowrap;}
+.week-subtitle{font-weight:500;color:var(--text-secondary);font-size:0.82rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.week-meta{font-size:0.8rem;color:var(--text-secondary);font-weight:700;white-space:nowrap;margin-left:auto;}
+.week-badge{padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;}
+.buffer-badge{background:var(--buffer-bg);color:var(--buffer-text);}
+.current-badge{background:#FEF3C7;color:#92400E;}
+[data-theme="dark"] .current-badge{background:#5D4037;color:#FFE082;}
+.week-header.buffer-week{border-left-color:var(--buffer-border);background:linear-gradient(135deg,var(--card-bg),rgba(139,92,246,0.08));}
+.week-header.current-week{border-left-color:var(--current-ring);outline:2px solid var(--current-ring);outline-offset:-1px;background:linear-gradient(135deg,var(--card-bg),rgba(245,158,11,0.10));}
+.week-body.collapsed{display:none;}
+.week-body{padding-left:8px;}
+.week-meta-line{
+  font-size:0.8rem;
+  color:var(--text-secondary);
+  padding:8px 4px 2px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 14px;
+}
+.week-dates{font-weight:600;color:var(--text);}
+.week-note{font-style:italic;color:var(--primary);}
+.week-goal-txt{color:var(--text-secondary);}
+.week-group.search-hidden,.day-card.search-hidden,.block-card.search-hidden{display:none;}
+
+/* ===== Day cards ===== */
+.day-card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:10px 12px;
+  margin:8px 0 8px 12px;
+  box-shadow:var(--shadow);
+  transition:background var(--transition);
+}
+.day-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-weight:700;
+  font-size:0.9rem;
+  color:var(--primary);
+  padding-bottom:6px;
+  margin-bottom:4px;
+  border-bottom:1px dashed var(--border);
+}
+.day-badge{font-size:0.75rem;padding:1px 8px;border-radius:10px;background:var(--primary-light);color:var(--primary);font-weight:600;}
+
+/* ===== Checkable section blocks ===== */
+.section-block{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:9px 12px;
+  margin:6px 0;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:var(--card-bg);
+  cursor:pointer;
+  transition:all var(--transition);
+}
+.section-block:hover{border-color:var(--primary);box-shadow:var(--shadow);}
+.section-block[data-status="1"]{background:var(--warning-bg);border-color:#F59E0B;}
+.section-block[data-status="2"]{background:var(--success-bg);border-color:#16A34A;}
+.section-block.placeholder{cursor:default;opacity:0.75;}
+.section-block.placeholder:hover{border-color:var(--border);box-shadow:none;}
+.section-check{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  border:2px solid var(--border);
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:0.7rem;
+  margin-top:1px;
+  transition:all var(--transition);
+  background:var(--card-bg);
+  color:transparent;
+  font-weight:700;
+}
+.section-block[data-status="1"] .section-check{border-color:#F59E0B;background:#FEF3C7;color:transparent;}
+.section-block[data-status="2"] .section-check{background:var(--success-text);border-color:var(--success-text);color:#fff;}
+.section-body{flex:1;min-width:0;}
+.section-label{font-weight:600;font-size:0.8rem;margin-bottom:2px;color:var(--text);}
+.section-block[data-status="1"] .section-label{color:var(--warning-text);}
+.section-block[data-status="2"] .section-label{color:var(--success-text);}
+.section-text{font-size:0.88rem;line-height:1.55;word-break:break-word;color:var(--text);}
+.section-block[data-status="1"] .section-text{color:var(--warning-text);}
+.section-block[data-status="2"] .section-text{color:var(--success-text);text-decoration:line-through;}
+.section-text .muted{color:var(--text-secondary);}
+
+/* ===== Standard / output (non-checkable) bar ===== */
+.standard-bar{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  margin-top:8px;
+  padding:8px 12px;
+  background:var(--accent-soft);
+  border-left:4px solid var(--primary);
+  border-radius:var(--radius-sm);
+  font-size:0.85rem;
+}
+.standard-label{font-weight:700;color:var(--primary);white-space:nowrap;flex-shrink:0;}
+.standard-text{color:var(--text);line-height:1.55;}
+
+/* ===== Block cards (block stages) ===== */
+.block-card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  margin:12px 0;
+  box-shadow:var(--shadow);
+  border-top:3px solid var(--primary);
+  transition:background var(--transition);
+}
+.block-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+.block-head-main{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0;}
+.block-label{font-weight:800;font-size:1rem;color:var(--primary);}
+.block-dates{font-size:0.8rem;color:var(--text-secondary);font-weight:600;}
+.block-badge{font-size:0.78rem;padding:2px 10px;border-radius:10px;background:var(--primary-light);color:var(--primary);font-weight:700;flex-shrink:0;}
+.block-theme{font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:2px;}
+.block-title{font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;}
+
+/* ===== Resources ===== */
+.resource-summary{font-size:0.85rem;color:var(--text-secondary);margin:16px 0 4px;}
+.resource-group{margin-bottom:18px;}
+.resource-cat{font-size:0.95rem;font-weight:800;color:var(--primary);margin-bottom:8px;padding-left:10px;border-left:4px solid var(--primary);}
+.resource-card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+  margin:6px 0;
+  box-shadow:var(--shadow);
+  transition:all var(--transition);
+}
+.resource-card:hover{box-shadow:var(--shadow-md);border-color:var(--primary);}
+.resource-name{font-weight:700;font-size:0.88rem;color:var(--text);}
+.resource-desc{font-size:0.82rem;color:var(--text-secondary);margin-top:2px;}
+
+/* ===== Footer ===== */
+.app-footer{text-align:center;padding:20px;color:var(--text-secondary);font-size:0.8rem;}
+
+/* ===== Responsive ===== */
+@media(max-width:640px){
+  .app-header{padding:12px 14px;}
+  .app-title{font-size:0.95rem;}
+  .tab-nav{padding:10px 14px 0;gap:3px;}
+  .tab-btn{padding:9px 6px;font-size:0.78rem;min-width:60px;}
+  .main-container{padding:0 14px 30px;}
+  .global-progress-inner{padding:12px 14px;}
+  .progress-grid{grid-template-columns:repeat(4,1fr);gap:6px;}
+  .progress-card{padding:10px 6px;}
+  .progress-card .value{font-size:1.35rem;}
+  .stage-overview{padding:14px;}
+  .day-card{margin-left:6px;}
+  .week-header{padding:10px 12px;gap:6px;}
+  .week-subtitle{display:none;}
+  .section-block{padding:8px 10px;gap:8px;}
+  .section-text{font-size:0.84rem;}
+  .standard-bar{flex-direction:column;gap:2px;}
+  .week-body{padding-left:0;}
+}
+@media(max-width:400px){
+  .progress-grid{grid-template-columns:repeat(2,1fr);}
+  .week-header .arrow{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="app-title">
+      <span class="icon">📚</span>
+      <span id="appTitle">学习打卡 · 全阶段规划（校历精确最终版）</span>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙 深色模式</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Global progress ===== -->
+<div class="global-progress">
+  <div class="main-container global-progress-inner">
+    <div class="progress-grid" id="globalProgress"></div>
+  </div>
+</div>
+
+<!-- ===== Tab navigation ===== -->
+<nav class="tab-nav" id="tabNav"></nav>
+
+<!-- ===== Panels (generated) ===== -->
+<div id="panels"></div>
+
+<footer class="app-footer">
+  <p>打卡数据保存在浏览器本地 · 点击任务区块切换状态：未开始 → 进行中 → 已完成</p>
+</footer>
+
+<!-- ===== Embedded task data (由 build 脚本从 task_data.json 注入) ===== -->
+<script type="application/json" id="taskDataJson">{"meta":{"title":"全阶段每日学习打卡表（校历精确最终版）","positioning":"定位：民办本科大二（2026.9.13=大二上第2周周日）| 目标：2027年暑假（大二结束）拿中小公司/远程「暑假里的实习」，2028年大三暑假冲正式暑期实习 | 技术路线：Python后端→RAG/LangGraph Agent | 校历：期末考第17-18周，Web实训第19周，六级笔试12.12（第15周周四）","planStart":"2026-09-14","startWeek":3},"overview":{"stages":[{"name":"阶段一 基础夯实\n第3-10周","time":"2026.9.14-11.8","tasks":"Python基础→面向对象→数据结构精简→MySQL→FastAPI→ORM→Git→Linux→JS→Nginx\n待办事项全栈项目完成首次公网部署","output":"待办项目（公网可访问）+ GitHub仓库 + Linux部署能力"},{"name":"阶段二 项目实战+六级\n第11-16周","time":"2026.11.9-12.20","tasks":"二手平台后端+前端联调+Docker容器化部署上线\nAgent基础（API/Function Call/Prompt/RAG入门）\n六级笔试12.12+口语11.21-22","output":"二手平台（Docker公网上线）+ 大模型调用能力 + 六级成绩"},{"name":"第17-18周 期末考试","time":"2026.12.21-2027.1.3","tasks":"全力复习期末，保证不挂科；每天20分钟保持技术认知","output":"期末考试成绩稳定"},{"name":"第19周 Web实训","time":"2027.1.4-1.10","tasks":"白天学校实训+成果复用项目前端；晚上知识库Agent基础框架搭建","output":"实训作业 + 知识库Agent框架雏形"},{"name":"阶段三 Agent攻坚\n寒假第1-6周","time":"2027.1.11起约6周","tasks":"RAG深度进阶+RAGAS评估→知识库Agent上线（含评估数据）→LangGraph专项5天→电商客服多智能体","output":"2个Agent项目（第一个高质量带数据，第二个带量化指标）"},{"name":"阶段四 求职冲刺\n大二下学期","time":"2027.3-8月","tasks":"简历打磨+八股背诵+批量投递面试；暑假入职中小公司/远程日常实习","output":"一段真实实习 + 简历 + 为2028暑期实习铺路"}],"adjustments":[{"tag":"校历对齐","text":"当前=大二上第2周周日，下周进入第3周；第17-18周期末考试、第19周Web实训全部落实；六级笔试12.12(第15周周四)、口语11.21-22(第12周)"},{"tag":"跳步修正1","text":"第3周砍掉正则（移到阶段二），优先保证文件读写+异常处理；HTML提前到周二晚30分钟预览"},{"tag":"跳步修正2","text":"第5周插入30分钟递归基础专题（阶乘/斐波那契/目录遍历），再进入数据结构"},{"tag":"跳步修正3","text":"第4周周四加20分钟Python类型注解专题（FastAPI/Pydantic硬前置）"},{"tag":"跳步修正4","text":"第9周JS顺序重排：周一JS核心、周二DOM+事件、周三Fetch+Promise+async再联调（不再先联调后学）"},{"tag":"跳步修正5","text":"第10周周四加1小时需求分析与三层架构专题（用户故事/表设计/分层），再启动二手平台"},{"tag":"跳步修正6","text":"第11周周一加JWT认证授权专题（Session vs JWT/签发校验/依赖注入）"},{"tag":"跳步修正7","text":"Linux独立成模块（第9-10周）：文件/权限/进程/SSH/包管理→问题排查/systemd/Nginx；验收=能独立部署排查Python服务"},{"tag":"跳步修正8","text":"第14周加Python异步与HTTP客户端专题（async/await/httpx/SSE），先于大模型流式调用"},{"tag":"跳步修正9","text":"第14周加30分钟JSON Schema基础（Function Call硬前置）"},{"tag":"跳步修正10","text":"Docker前置独立学习（第12周）→第13周容器化部署上线；寒假不再第一次接触Docker"},{"tag":"跳步修正11","text":"寒假第5周前安排5天LangGraph专项（StateGraph/条件边/Checkpoint/多智能体/重写单Agent），再进入多智能体项目"},{"tag":"跳步修正12","text":"第19周只做知识库Agent基础框架+基础RAG，深度优化放寒假第2周（顺序修正）"},{"tag":"投递策略","text":"11月启动日常实习投递练手（全年滚动），优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习"},{"tag":"量化评估","text":"知识库Agent用20-50条问答测试集+RAGAS；客服智能体用20-30轮模拟对话测试，注明测试方法"},{"tag":"资源替换","text":"删JavaGuide主八股，换Python后端面试专项+LLM-Interview；新增AI编程工具（Cursor/Claude Code）要求"},{"tag":"六级策略","text":"四级464起点：每天碎片时间背词+听力精听必做；考前4周每周2套真题；口语11月、笔试12.12；过线概率约五到六成，不喧宾夺主"}]},"stages":[{"id":"s1","name":"阶段一：基础夯实","time":"第3-10周 · 2026.9.14-11.8","intro":"目标：Python基础→面向对象→数据结构→MySQL→FastAPI→ORM→Git→Linux→JS→Nginx，完成待办项目首次公网部署\n跳步修正：正则后移、递归专题(第5周)、类型注解专题(第4周)、JS顺序重排(第9周)、需求分析专题(第10周)；Linux独立成模块(第9-10周)","type":"daily","weeks":[{"label":"第3周","dates":"9.14-9.20","title":"Python核心语法筑基","goal":"掌握基础语法+函数+常用数据结构","note":"跳步修正：砍掉正则，HTML提前预览","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：六级高频词50个（四级464起点，词汇优先）\n② 电子电路课上：泛听六级听力磨耳朵","school":"上午：电子电路基础课（保证出勤）","tech":"下午+晚上：\n1. 基础：变量、数据类型、输入输出\n2. 分支结构、循环结构+配套练习\n3. 函数定义、参数、返回值","standard":"不查资料能独立写出10个不同功能的自定义函数"},{"day":"周二","cet6":"① 早课前：复习昨日单词+新词20个\n② 离散课上：背单词碎片记忆","school":"上午：离散数学课\n晚上：Java程序设计课（对应理解Python）","tech":"下午：\n1. 列表、元组常用操作+练习\n2. 字典、集合常用操作+练习\n3. 【30分钟HTML入门预览】常用标签认知\n课后：对比Java与Python基础语法","standard":"能用列表+字典实现简易学生名单增删改查；认识常用HTML标签"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：精听1篇六级听力（听两遍，对照原文）","school":"无课，全天自主安排","tech":"上午：字符串高级操作（正则砍掉，移到阶段二）\n下午：文件读写、异常捕获与处理\n晚上：命令行学生管理系统v1（数据存txt）","standard":"程序能完整运行，支持增删改查，数据持久化到文件，异常输入不崩溃"},{"day":"周四","cet6":"① 早课前：复习本周单词\n② 思政/选修课上：泛听听力","school":"上午：公共课\n下午：思政类课程（出勤即可）","tech":"晚上：\n1. 内置常用模块（os/datetime/random）\n2. 代码规范、命名规范","standard":"能熟练导入常用模块，完成文件批量重命名小脚本"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课上：同步练组件","school":"下午：Web前端技术课「自主学习」\n内容：HTML核心常用标签 + Bootstrap5入门（栅格、表单、卡片）","tech":"晚上：\n1. 落地练习：用Bootstrap拼待办事项静态页面框架\n2. Python本周知识点复盘","standard":"能快速拼出整洁的表单+列表页面；Python本周无盲区"},{"day":"周六","cet6":"上午9:00-10:30：六级阅读专项（重点练长难句定位）","school":"—","tech":"下午：学生管理系统优化，增加异常处理\n晚上：Python基础查漏补缺","standard":"程序健壮，异常输入不崩溃"},{"day":"周日","cet6":"下午14:00-16:00：本周单词复盘+听力错题重听","school":"—","tech":"上午：本周知识点梳理，写笔记\n晚上：预习面向对象内容","standard":"能独立讲清Python基础核心知识点；有代码模板"}]},{"label":"第4周","dates":"9.21-9.27","title":"面向对象入门+进阶","goal":"掌握类/继承/多态+模块化","note":"跳步修正：类型注解专题补上","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课上：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 面向对象核心：类、对象、属性、方法\n2. 构造方法、封装","standard":"能写出Student类，包含属性和方法"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课上：背单词","school":"上午：离散数学课\n晚上：Java课（对比理解面向对象）","tech":"下午：\n1. 继承、多态基础\n2. 类方法、静态方法","standard":"能写出子类继承父类的简单案例"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：面向对象进阶：魔法方法\n下午：用面向对象重构学生管理系统\n晚上：代码结构优化分层","standard":"系统用类实现，模块清晰"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课上：作文素材积累","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. 模块与包的导入、pip安装第三方库\n2. 【20分钟Python类型注解专题】int/str/list/dict/Optional + 函数签名类型提示","standard":"能拆分模块；能看懂并写出带类型注解的函数（FastAPI/Pydantic硬前置）"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课上：同步练组件","school":"下午：Web前端技术课「自主学习」\n内容：列表/表格 + Bootstrap导航栏、表格","tech":"晚上：\n1. 落地练习：待办页面加导航+列表表格\n2. 面向对象复盘","standard":"待办静态页面完整；面向对象无盲区"},{"day":"周六","cet6":"上午：六级听力专项（精听+跟读）","school":"—","tech":"下午：学生管理系统最终优化\n晚上：预习数据结构","standard":"代码规范有注释"},{"day":"周日","cet6":"下午：听力错题复盘","school":"—","tech":"上午：面向对象知识点梳理\n晚上：预习下周数据结构","standard":"能讲清面向对象三大特性"}]},{"label":"第5周","dates":"9.28-10.4","title":"国庆假期·数据结构+MySQL入门","goal":"数组/链表/栈/队列/哈希/二分+单表SQL","note":"跳步修正：递归专题先行","is_buffer":false,"days":[{"day":"周一","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：【30分钟递归基础专题】阶乘、斐波那契、目录遍历，讲清调用栈和终止条件\n下午：时间复杂度；数组原理与操作；链表原理+手写单链表","standard":"能手写单链表增删节点；理解递归执行逻辑"},{"day":"周二","cet6":"早上30词；午休后1篇阅读","school":"国庆放假","tech":"上午：栈、队列原理+Python实现\n下午：哈希表原理+字典实现哈希查询","standard":"能独立实现栈和队列的入/出操作"},{"day":"周三","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：二分查找原理+手写实现\n下午：MySQL安装、库/表操作、基本增删改查SQL","standard":"能手写单表增删改查SQL；能手写二分查找"},{"day":"周四","cet6":"早上30词；午休后1篇阅读","school":"国庆放假","tech":"上午：条件查询、排序、分组统计\n下午：内连接查询","standard":"能写出带where/order by/group by的查询SQL"},{"day":"周五","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：pymysql安装+Python连接MySQL\n下午：用pymysql实现学生表增删改查","standard":"运行Python脚本能对数据库做增删改查"},{"day":"周六","cet6":"上午：六级真题模考（阅读+听力）","school":"国庆放假","tech":"下午：事务基础、索引基础概念\n晚上：本周知识点梳理","standard":"能说出事务四大特性；知道索引作用"},{"day":"周日","cet6":"下午：真题复盘+单词补漏","school":"国庆放假","tech":"上午：查漏补缺\n晚上：调整状态","standard":"本周知识点无明显盲区"}]},{"label":"第6周","dates":"10.5-10.11","title":"MySQL进阶+数据库设计","goal":"","note":"缓冲周·只复盘不学新大模块","is_buffer":true,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 慢查询基础、索引优化实战\n2. Python操作数据库事务处理","standard":"能给表加合适索引；代码实现事务控制"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. 多表联查练习\n2. 数据库表设计三大范式","standard":"能写出3表联查SQL；理解三大范式"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：表设计实战：学生/课程/成绩三张表\n下午：用pymysql重构学生管理系统\n晚上：系统测试优化","standard":"系统所有数据走MySQL；表设计合理"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：数据库设计查漏补缺；常见场景积累","standard":"能独立完成简单业务表结构设计"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练弹窗","school":"下午：Web前端技术课「自主学习」\n内容：表单 + Bootstrap模态框","tech":"晚上：\n1. 落地练习：待办页面加新增/编辑弹窗\n2. 数据库本周复盘","standard":"页面支持弹窗交互；数据库无盲区"},{"day":"周六","cet6":"上午：六级翻译专项","school":"—","tech":"下午：待办事项表设计+数据库实现\n晚上：预习FastAPI","standard":"能设计合理的待办表结构"},{"day":"周日","cet6":"下午：翻译复盘+单词回顾","school":"—","tech":"上午：本周知识点梳理\n晚上：预习FastAPI环境搭建","standard":"能讲清表设计思路"}]},{"label":"第7周","dates":"10.12-10.18","title":"FastAPI入门+基础接口开发","goal":"掌握RESTful接口+数据库交互","note":"类型注解已就位","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. FastAPI环境搭建、第一个接口\n2. 路径参数、查询参数","standard":"启动服务能访问/docs接口文档"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. 请求体、Pydantic数据模型（类型注解已学，直接上手）\n2. 响应模型、状态码","standard":"能定义请求响应格式；接口返回规范数据"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：依赖注入、异常处理基础\n下午：FastAPI+pymysql实现待办查询接口\n晚上：Postman安装调试","standard":"能通过接口查询数据库待办数据；Postman测试正常"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：新增、修改、删除接口开发","standard":"待办增删改查接口全部完成"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练样式","school":"下午：Web前端技术课「自主学习」\n内容：CSS选择器、盒模型 + Bootstrap样式工具","tech":"晚上：\n1. 落地练习：优化待办页面样式\n2. 接口联调测试","standard":"页面整洁美观；所有接口测试通过"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：接口优化；统一错误处理\n晚上：整理接口文档","standard":"接口文档清晰；异常返回友好提示"},{"day":"周日","cet6":"下午：真题复盘+核心词背诵","school":"—","tech":"上午：代码整理规范\n晚上：预习SQLAlchemy","standard":"代码结构清晰有注释"}]},{"label":"第8周","dates":"10.19-10.25","title":"SQLAlchemy ORM+待办接口重构","goal":"ORM替代原生SQL，接口分层","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. ORM核心概念理解\n2. SQLAlchemy安装、连接、模型类定义","standard":"能定义模型类；启动自动生成数据库表"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：SQLAlchemy单表增删改查（单独脚本练习）","standard":"运行脚本能用ORM完成表增删改查"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：ORM查询进阶：条件、排序、分页\n下午：FastAPI整合SQLAlchemy，封装数据库会话\n晚上：重构待办CRUD接口","standard":"待办接口全部改用ORM实现；功能正常"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：接口全量测试；bug修复","standard":"所有接口测试通过；数据和数据库同步"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练响应式","school":"下午：Web前端技术课「自主学习」\n内容：CSS Flex布局 + Bootstrap响应式","tech":"晚上：\n1. 落地练习：待办页面响应式适配\n2. ORM知识点复盘","standard":"页面不同宽度正常显示；ORM操作熟练"},{"day":"周六","cet6":"上午：六级写作专项","school":"—","tech":"下午：分层架构改造；统一响应格式\n晚上：代码结构优化","standard":"代码按model/schema/controller分层"},{"day":"周日","cet6":"下午：作文素材复盘","school":"—","tech":"上午：本周知识点梳理\n晚上：预习Git+Linux","standard":"能讲清ORM和原生SQL区别"}]},{"label":"第9周","dates":"10.26-11.1","title":"Git+Linux基础+JS核心+前端联调","goal":"Git托管+Linux入门+JS打通前后端","note":"跳步修正：JS顺序重排，先学后联调","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. Git基础：安装、add/commit/status、远程推送拉取\n2. 【JS核心语法】变量、数据类型、函数、数组、对象","standard":"能提交代码到GitHub；能写JS基础函数操作数组"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. Git分支、合并、简单冲突处理\n2. 【DOM操作+事件绑定】元素获取、创建删除、点击事件","standard":"能创建合并分支；能用JS操作页面元素、绑定事件"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Linux基础：文件系统、ls/cd/mkdir/rm/cp/mv/grep/find\n下午：【Fetch+Promise+async/await】接口请求、异步编程\n晚上：前后端联调，实现待办增删改查页面交互","standard":"能在终端操作文件；页面能直接调用后端接口，数据实时同步"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. Linux进阶：权限chmod、进程ps/top/kill、tar压缩解压\n2. 前端交互优化","standard":"能修改文件权限；能查看终止进程；页面交互流畅"},{"day":"周五","cet6":"① 早课前：核心词复盘\n② Web课：同步练事件","school":"下午：Web前端技术课「自主学习」\n内容：JS事件进阶+表单验证","tech":"晚上：\n1. 落地练习：表单验证对接后端\n2. Linux命令复盘","standard":"表单验证前后端一致；常用Linux命令熟练"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：Linux综合实操：待办项目上传服务器，裸机启动运行\n晚上：写README；代码整理上传GitHub","standard":"能在云服务器独立启动后端服务；公网IP+端口能访问"},{"day":"周日","cet6":"下午：真题复盘+错题整理","school":"—","tech":"上午：Git+Linux知识点梳理\n晚上：预习下周项目收尾+Nginx","standard":"能讲清Git工作流；能独立部署Python服务"}]},{"label":"第10周","dates":"11.2-11.8","title":"Linux进阶+Nginx+项目收尾+架构设计","goal":"待办首次公网部署验收","note":"跳步修正：需求分析专题先行于二手平台","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. Linux问题排查：端口占用、进程挂死、权限报错、依赖缺失四类定位\n2. 项目细节优化，修复bug","standard":"能独立排查服务启动失败、端口访问不了两类常见问题"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. systemd基础：配置服务、开机自启、查看状态\n2. SQL查漏补缺","standard":"能把Python服务配置成systemd后台常驻"},{"day":"周三","cet6":"① 早上：高频词梳理\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Nginx基础：反向代理、端口转发、静态文件服务\n下午：待办项目完整部署：Nginx反代后端+静态页\n晚上：部署踩坑记录，写技术博客","standard":"公网IP能直接访问项目页面和接口；服务稳定"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. 【1小时需求分析与三层架构专题】用户故事、表设计、controller/service/model分层\n2. FastAPI查漏补缺","standard":"能写出简单的需求清单；理解三层架构划分"},{"day":"周五","cet6":"① 早课前：核心词复盘\n② Web课：同步练封装","school":"下午：Web前端技术课「自主学习」\n内容：Fetch封装+通用工具类","tech":"晚上：\n1. 落地练习：封装通用请求工具类\n2. 前端查漏补缺","standard":"有统一的接口请求工具；前端无明显盲区"},{"day":"周六","cet6":"上午：六级中期总结","school":"—","tech":"下午：二手交易平台需求分析+架构设计\n晚上：技术选型确认","standard":"输出需求文档和表结构设计；符合三层架构"},{"day":"周日","cet6":"下午：休整+单词复盘","school":"—","tech":"上午：第一阶段整体复盘\n晚上：规划第二阶段","standard":"清晰掌握第一阶段所有技术栈"}]}]},{"id":"s2","name":"阶段二：项目实战+六级+Agent入门","time":"第11-16周 · 2026.11.9-12.20","intro":"目标：二手平台Docker容器化部署上线；Agent基础入门（API/Function Call/Prompt/RAG）；六级考试完成\n跳步修正：JWT专题(第11周)、异步+JSON Schema专题(第14周)、Docker前置(第12周)、Nginx+HTTPS(第13周)；六级笔试12.12(第15周周四)、口语11.21-22(第12周)","type":"daily","weeks":[{"label":"第11周","dates":"11.9-11.15","title":"二手平台后端核心开发+JWT认证","goal":"用户/商品/订单三模块接口","note":"跳步修正：JWT专题先行","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【JWT认证授权专题】Session vs JWT、签发校验流程、FastAPI依赖注入实现登录校验\n2. 项目初始化，搭建分层架构","standard":"能实现JWT登录注册；接口能校验token"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：用户模块接口开发（注册、登录、信息修改）","standard":"用户模块所有接口测试通过"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：商品模块接口开发（发布、列表、详情、搜索）\n下午：订单模块接口开发（下单、状态修改、列表）\n晚上：接口联调测试；全局异常处理","standard":"核心业务接口全部开发完成"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：接口权限校验；参数校验完善","standard":"接口健壮；参数异常不崩溃"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练电商布局","school":"下午：Web前端技术课「自主学习」\n内容：电商页面布局+Bootstrap电商组件","tech":"晚上：\n1. 落地练习：首页、商品列表页静态版\n2. 后端bug修复","standard":"核心页面静态版完成；后端接口定型"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：数据库索引优化；分页查询实现\n晚上：接口文档完善","standard":"接口性能达标；文档完整"},{"day":"周日","cet6":"下午：真题复盘+错题整理","school":"—","tech":"上午：后端代码优化\n晚上：预习前端联调+Docker","standard":"后端核心功能稳定"}]},{"label":"第12周","dates":"11.16-11.22","title":"前端联调+Docker基础","goal":"核心流程打通+Docker入门","note":"跳步修正：Docker前置独立学习；11.21-22六级口语考试","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：商品详情页、发布商品页开发","standard":"页面能正常渲染布局"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：登录注册页、个人中心页开发","standard":"核心页面静态版完成"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Fetch封装，对接后端接口\n下午：全流程联调：浏览-发布-下单\n晚上：交互优化；加载状态、错误提示","standard":"核心业务流程前后端打通；数据同步"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：【Docker基础专题】镜像与容器概念、docker run/ps/logs/exec","standard":"能拉取镜像、启动容器、进入容器、查看日志"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练表单验证","school":"下午：Web前端技术课「自主学习」\n内容：JS表单验证+交互逻辑","tech":"晚上：\n1. 落地练习：表单验证对接后端\n2. Docker进阶：Dockerfile编写基础","standard":"表单验证前后端一致；能写简单Dockerfile构建Python镜像"},{"day":"周六","cet6":"① 六级口语考试（11.21）\n② 考前针对性练习30分钟","school":"—","tech":"下午：Docker进阶：docker-compose基础、多容器编排\n晚上：管理员后台页面开发","standard":"能用compose一键启动后端+数据库两个容器"},{"day":"周日","cet6":"① 六级口语考试（11.22，视场次）\n② 下午：作文复盘+单词回顾","school":"—","tech":"上午：Docker知识点梳理\n晚上：预习下周部署上线","standard":"能独立完成Python项目Docker镜像构建与启动"}]},{"label":"第13周","dates":"11.23-11.29","title":"Docker容器化部署+项目定型","goal":"二手平台公网上线+简历项目成型","note":"跳步修正：Nginx+HTTPS专题前置","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【Nginx进阶+HTTPS基础】反向代理配置、静态文件服务、Certbot一键申请证书、域名解析概念\n2. 服务器Docker环境安装","standard":"能配置Nginx反代；理解HTTPS证书作用"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：编写项目Dockerfile；构建后端镜像","standard":"能在本地构建项目镜像并运行"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：编写docker-compose.yml，编排后端+MySQL+前端\n下午：服务器部署：镜像上传、compose启动、Nginx反代、HTTPS配置\n晚上：公网访问测试；压力测试；问题排查","standard":"公网域名能正常访问项目；所有功能容器化运行"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：部署踩坑记录；写技术博客","standard":"输出容器化部署教程博客"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练数据处理","school":"下午：Web前端技术课「自主学习」\n内容：JS数组进阶+数据处理","tech":"晚上：项目细节优化；bug修复","standard":"项目线上版稳定运行"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：项目最终优化；非核心功能裁剪\n晚上：GitHub仓库完善，加演示链接、架构图、部署说明","standard":"GitHub仓库规范完整；有公网演示链接"},{"day":"周日","cet6":"下午：真题复盘+核心词背诵","school":"—","tech":"上午：项目最终验收\n晚上：Agent基础预习","standard":"项目完全定型可作简历项目；Docker部署能讲清流程"}]},{"label":"第14周","dates":"11.30-12.6","title":"Agent基础入门","goal":"大模型API+Function Call+Prompt","note":"跳步修正：异步/HTTP客户端+JSON Schema专题","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【Python异步与HTTP客户端专题】async/await、httpx库、SSE流式读取原理\n2. 【30分钟JSON Schema基础】工具定义格式、type/properties/required\n3. 注册开放平台；大模型API调用Hello World","standard":"能异步调用大模型API；能看懂JSON Schema"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：多轮对话上下文管理；流式输出实现","standard":"能实现多轮对话；支持流式打字效果"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Function Call核心原理；工具定义\n下午：手写天气查询、数据库查询两个工具案例\n晚上：带工具调用的对话助手封装","standard":"大模型能自主判断调用工具、传参并返回结果"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：Prompt工程基础：结构化提示词、角色设定","standard":"能写出规范的角色提示词"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练对话界面","school":"下午：Web前端技术课「自主学习」\n内容：对话界面布局+流式效果","tech":"晚上：\n1. 落地练习：简单网页对话Demo\n2. 业务场景Prompt练习","standard":"能针对业务场景写出优化提示词"},{"day":"周六","cet6":"上午：六级翻译专项","school":"—","tech":"下午：整理10套业务场景Prompt模板\n晚上：RAG基础概念学习","standard":"有自己的Prompt模板库"},{"day":"周日","cet6":"下午：翻译复盘+单词回顾","school":"—","tech":"上午：本周Agent知识点梳理\n晚上：预习RAG详细内容","standard":"能讲清Function Call作用和流程"}]},{"label":"第15周","dates":"12.7-12.13","title":"RAG入门+六级冲刺","goal":"跑通基础RAG流程；12.12（周四）六级笔试","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频错题词\n② 电子电路课：精听听力","school":"上午：电子电路基础课","tech":"下午+晚上：文档加载解析；文本切片策略","standard":"能加载解析PDF/TXT文档"},{"day":"周二","cet6":"① 早课前：高频词\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：嵌入模型使用；文本向量化","standard":"能将文本转为向量"},{"day":"周三","cet6":"① 早上：高频词\n② 午休后：1套阅读","school":"无课，全天自主安排","tech":"上午：Chroma向量数据库入门；增删改查\n下午：检索召回+大模型生成，跑通完整RAG流程\n晚上：封装RAG通用模块","standard":"本地能跑通「文档上传→检索→回答」完整流程"},{"day":"周四","cet6":"【12.12 六级笔试日】上午考试，下午休整","school":"上午：参加六级考试","tech":"晚上：休整放松，不安排技术任务","standard":"六级考试完成"},{"day":"周五","cet6":"① 早课前：高频词\n② 六级考后复盘","school":"下午：Web前端技术课「自主学习」\n内容：DOM进阶+动态渲染","tech":"晚上：\n1. 落地练习：RAG对话页面雏形\n2. RAG知识点复盘","standard":"有简单的RAG问答Demo"},{"day":"周六","cet6":"上午：休整","school":"—","tech":"下午：RAG前端对话页优化\n晚上：本周知识点复盘","standard":"对话界面基本可用"},{"day":"周日","cet6":"下午：休整","school":"—","tech":"上午：查漏补缺\n晚上：调整状态，准备期末复习","standard":"RAG基础掌握；六级状态良好"}]},{"label":"第16周","dates":"12.14-12.20","title":"六级收官+LangGraph入门+期末复习启动","goal":"轻量LangGraph概念+期末复习节奏","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"六级考后休整，不再背词","school":"各门课程正常上课","tech":"晚上：LangGraph基础概念学习：状态、节点、边核心组成","standard":"了解LangGraph核心组成，不写重代码"},{"day":"周二","cet6":"—","school":"上午：离散数学课\n晚上：Java课","tech":"下午+晚上：30分钟LangGraph：状态更新与节点执行顺序","standard":"能说出节点如何按顺序执行"},{"day":"周三","cet6":"—","school":"无课，全天自主安排","tech":"上午：期末复习启动（离散数学）\n下午：期末复习（电子电路）\n晚上：30分钟LangGraph条件分支预习","standard":"期末复习进入节奏；LangGraph认知建立"},{"day":"周四","cet6":"—","school":"上午：公共课\n下午：思政类课程","tech":"晚上：期末复习（思政/课程论文）","standard":"期末复习稳步推进"},{"day":"周五","cet6":"—","school":"下午：Web前端技术课（正常上课）","tech":"晚上：期末复习（Java/电子电路）","standard":"期末复习稳步推进"},{"day":"周六","cet6":"—","school":"—","tech":"全天：期末复习（重点科目）","standard":"期末复习进度过半"},{"day":"周日","cet6":"—","school":"—","tech":"上午：期末复习\n晚上：规划下周考试安排","standard":"对期末考试有全局安排"}]}]},{"id":"s3","name":"第17-19周：期末考试 + Web实训","time":"2026.12.21-2027.1.10","intro":"期末考集中在第17-18周；Web前端集中实训在第19周。期末周技术降级为轻量保持，实训周白天跟学校、晚上做自己的项目。","type":"block","blocks":[{"label":"第17周","dates":"12.21-12.27","title":"","theme":"期末考试周","time":"期末考试周","core":"全力复习期末考试，保证不挂科\n每天抽20分钟：看Agent技术文章，保持认知，不写重代码","output":"期末考试成绩稳定"},{"label":"第18周","dates":"12.28-1.3","title":"","theme":"期末考试周","time":"期末考试周","core":"期末考试（跨年）\n每天抽15分钟：梳理寒假项目架构","output":"期末考试全部完成"},{"label":"第19周","dates":"1.4-1.10","title":"Web前端集中实训周","theme":"Web实训周","time":"Web实训周","core":"白天：跟着学校实训完成实训作业，直接把实训成果复用到三个项目的前端优化，统一设计风格，打磨成面试演示版本\n晚上：知识库Agent基础框架搭建 + 基础RAG流程跑通（深度优化留到寒假）","output":"实训作业完成 + 知识库Agent框架雏形"}]},{"id":"s4","name":"阶段三：Agent核心攻坚","time":"寒假第1-6周 · 2027.1.11起约6周","intro":"寒假时间充裕（每天可投入5-6小时）。核心原则：优先1个高质量带评估数据的知识库Agent；LangGraph专项5天打牢基础再进多智能体；每项目带可验证量化指标。","type":"block","blocks":[{"label":"寒假第1周","dates":"1.11起","title":"","theme":"大模型基础巩固","time":"大模型基础巩固","core":"大模型API进阶+Function Call进阶+Prompt工程进阶\n每天：3道算法题保持手感","output":"Function Call熟练+Prompt模板库扩充"},{"label":"寒假第2周","dates":"","title":"","theme":"RAG深度进阶","time":"RAG深度进阶","core":"混合检索策略、重排序Rerank、上下文压缩、引用溯源\n【RAGAS评估】构建20-50条问答测试集，记录Top-1召回率和答案准确率\n每天：3道算法题","output":"RAG深度优化完成+评估数据产出"},{"label":"寒假第3周","dates":"","title":"","theme":"知识库Agent开发","time":"知识库Agent开发","core":"后端：文档上传、向量存储、对话生成API\n前端：Vue对话页+文档管理页（或用原生+模板快速拼），流式输出\n每天：2道算法题","output":"知识库Agent前后端完成"},{"label":"寒假第4周","dates":"","title":"","theme":"知识库Agent部署","time":"知识库Agent部署","core":"Docker打包部署，上线公网\n编写README+演示视频\n整理评估数据（测试方法+测试集说明）\n每天：2道算法题","output":"第一个高质量Agent项目上线（含真实评估数据）"},{"label":"寒假第5周","dates":"","title":"","theme":"LangGraph专项5天+多智能体启动","time":"LangGraph专项5天+多智能体启动","core":"【LangGraph专项（新增，打牢基础）】\nDay1：StateGraph、节点、边、编译运行\nDay2：条件边、循环、状态更新\nDay3：Checkpoint、持久化、Human-in-the-loop\nDay4：多智能体模式（Supervisor/Swarm）\nDay5：用LangGraph重写一个简单单Agent\n随后启动电商客服多智能体开发","output":"LangGraph系统掌握+多智能体项目启动"},{"label":"寒假第6周","dates":"","title":"","theme":"多智能体项目+收尾","time":"多智能体项目+收尾","core":"开发电商客服多智能体（接待/订单查询/工单生成三角色）\n记忆和转人工逻辑；前端后台\n【评估】20-30轮模拟对话测试：意图识别准确率、自动解决率、转人工率\n部署上线+寒假复盘","output":"第二个Agent项目完成（带量化指标）+寒假复盘"}]},{"id":"s5","name":"阶段四：求职冲刺+暑假实习","time":"大二下学期 · 2027.3-8月","intro":"投递优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习。先把「有实习」落地，再追求含金量；11月即可启动投递练手。","type":"block","blocks":[{"label":"开学第1-2周","dates":"","title":"","theme":"简历+八股启动","time":"简历+八股启动","core":"用CodeCV写简历，突出两个Agent项目\n每个项目写「背景-选型-难点-方案-优化」逐字稿\n八股：Python后端专项+LLM-Interview\n【启动日常实习投递】目标：中小公司Python后端/全栈","output":"简历成型+开始投递"},{"label":"开学第3-8周","dates":"","title":"","theme":"批量投递+面试实战","time":"批量投递+面试实战","core":"每天投递10-15家：BOSS直聘、实习僧、牛客网、内推\n每天：1小时八股+1小时算法（简单+中等）\n记录每次面试问题，当天复盘补漏\n项目持续迭代（面试中暴露的问题优先修）","output":"面试能力提升+拿到面试机会"},{"label":"开学第9-12周","dates":"","title":"","theme":"offer选择+入职准备","time":"offer选择+入职准备","core":"边面边优化，日常实习全年滚动\n拿到offer后准备入职（技术栈补漏）\n暑期实习若有窗口继续投（大二不符合正式暑期实习对象，能投则投）","output":"2027年暑假实习敲定（中小公司/远程）"}]}],"resources":[{"category":"Python基础","name":"B站黑马程序员Python教程（只看基础+面向对象部分）","desc":"入门快，对应第3-4周"},{"category":"Python基础","name":"Python官方文档（Tutorial）","desc":"遇到不懂查官方，建立准确概念"},{"category":"数据结构","name":"B站王卓《数据结构》（只看数组/链表/栈/队列/哈希/二分）","desc":"2倍速，配合Python手写实现"},{"category":"数据结构","name":"LeetCode热题100（筛简单题）","desc":"第5周起步，每周3-5道，不深入DP/图论"},{"category":"数据库","name":"尚硅谷MySQL高级（索引/事务/慢查询）","desc":"第6周配合复习，面试重点"},{"category":"后端框架","name":"FastAPI官方中文文档（必看）","desc":"第7周项目驱动学习"},{"category":"后端框架","name":"SQLAlchemy官方文档/掘金《FastAPI+SQLAlchemy整合指南》","desc":"第8周ORM核心"},{"category":"Linux","name":"B站韩顺平Linux入门（文件/权限/进程/SSH/包管理）","desc":"第9-10周，够用线即可"},{"category":"Linux","name":"《鸟哥的Linux私房菜》（基础篇，按需查）","desc":"部署排查时查命令用"},{"category":"Docker","name":"B站狂神说Docker（基础到部署）","desc":"第12-13周，容器化部署核心"},{"category":"前端","name":"MDN Web Docs（HTML/CSS/JS）","desc":"Web课自学的权威来源"},{"category":"前端","name":"Bootstrap5官方中文文档","desc":"快速拼页面，不卷前端深度"},{"category":"大模型","name":"智谱AI/通义千问开放平台文档","desc":"第14周API调用实战"},{"category":"大模型","name":"吴恩达《Prompt Engineering》中文版","desc":"Prompt系统学习"},{"category":"RAG","name":"B站同济子豪兄《RAG从入门到实战》","desc":"第15周+寒假第2周，跑通全流程"},{"category":"RAG","name":"RAGAS官方文档","desc":"寒假第2周，量化评估知识库Agent"},{"category":"LangGraph","name":"LangGraph中文官网教程+官方GitHub examples","desc":"寒假第5周专项，带可运行代码"},{"category":"LangGraph","name":"Datawhale《Hello-Agents》","desc":"多智能体系统教程"},{"category":"AI编程工具","name":"Cursor / Claude Code 官方文档","desc":"2026年招聘常见要求，尽早用起来"},{"category":"八股面试","name":"Python后端面试专项题库（GitHub搜「Python-Interview」）","desc":"覆盖装饰器/生成器/GIL/异步/FastAPI/SQLAlchemy"},{"category":"八股面试","name":"GitHub「LLM-Interview」（Agent方向主八股）","desc":"汇总RAG、Agent、大模型应用面试题——主要来源"},{"category":"八股面试","name":"LeetCode热题100、牛客网剑指Offer","desc":"中小厂实习算法要求低，优先高频题"},{"category":"投递渠道","name":"BOSS直聘、实习僧","desc":"中小公司最多，日常实习全年滚动投递"},{"category":"投递渠道","name":"脉脉、小红书搜索「Python实习内推」「Agent实习内推」","desc":"找从业者内推，通过率更高"}]}</script>
+
+<!-- ===== Application logic ===== -->
+<script>
+(function() {
+'use strict';
+
+/* ============================================================
+   1. 数据 & 常量
+   ============================================================ */
+var DATA = JSON.parse(document.getElementById('taskDataJson').textContent);
+var META = DATA.meta || {};
+var OVERVIEW = DATA.overview || { stages: [], adjustments: [] };
+var STAGES = DATA.stages || [];
+var RESOURCES = DATA.resources || [];
+
+var STORAGE_KEY = 'study_checkin_v3_state';
+var THEME_KEY = 'study_checkin_v3_theme';
+
+/* 可打卡区块定义（daily） */
+var SECTIONS = [
+  { key: 'cet6',   label: '六级任务', icon: '🎧' },
+  { key: 'school', label: '学校课程', icon: '🏫' },
+  { key: 'tech',   label: '技术学习', icon: '💻' }
+];
+/* 可打卡区块定义（block）—— dayOrBlock 固定为 'core' */
+var BLOCK_SECTION = { key: 'core', label: '核心任务', icon: '💻' };
+
+/* Tab 短名映射 */
+var TAB_META = [
+  { id: 's1', short: '阶段一' },
+  { id: 's2', short: '阶段二' },
+  { id: 's3', short: '期末+实训' },
+  { id: 's4', short: '寒假Agent' },
+  { id: 's5', short: '求职冲刺' }
+];
+
+/* 状态机：0=未开始 1=进行中 2=已完成 */
+var NEXT = { 0: 1, 1: 2, 2: 0 };
+
+/* ============================================================
+   2. 状态（localStorage 持久化）
+   ============================================================ */
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    var obj = raw ? JSON.parse(raw) : {};
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { /* storage 不可用则忽略 */ }
+}
+var state = loadState();
+
+/* stageId | weekLabelOrBlockLabel | dayOrBlock | section  ——全局唯一 */
+function statusKey(stageId, group, day, section) {
+  return stageId + '|' + group + '|' + day + '|' + section;
+}
+function getStatus(stageId, group, day, section) {
+  return state[statusKey(stageId, group, day, section)] || 0;
+}
+
+/* ============================================================
+   3. 通用工具
+   ============================================================ */
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function nl2br(s) { return escHtml(s).replace(/\n/g, '<br>'); }
+
+/* 打卡项判定：内容非空且不等于「—」*/
+function isCheckable(v) {
+  if (v === null || v === undefined) return false;
+  var t = String(v).trim();
+  return t !== '' && t !== '—' && t !== '–' && t !== '-' && t !== '－';
+}
+function stageById(id) {
+  for (var i = 0; i < STAGES.length; i++) if (STAGES[i].id === id) return STAGES[i];
+  return null;
+}
+
+/* ============================================================
+   4. 进度计算（仅统计可打卡项）
+   ============================================================ */
+function calcDay(stageId, weekLabel, day) {
+  var total = 0, done = 0, prog = 0;
+  SECTIONS.forEach(function (sec) {
+    if (!isCheckable(day[sec.key])) return;
+    total++;
+    var st = getStatus(stageId, weekLabel, day.day, sec.key);
+    if (st === 2) done++; else if (st === 1) prog++;
+  });
+  return { total: total, done: done, prog: prog };
+}
+function calcWeek(stageId, week) {
+  var t = 0, d = 0, p = 0;
+  (week.days || []).forEach(function (day) {
+    var s = calcDay(stageId, week.label, day);
+    t += s.total; d += s.done; p += s.prog;
+  });
+  return { total: t, done: d, prog: p };
+}
+function calcBlock(stageId, block) {
+  if (!isCheckable(block.core)) return { total: 0, done: 0, prog: 0 };
+  var st = getStatus(stageId, block.label, 'core', 'core');
+  return { total: 1, done: st === 2 ? 1 : 0, prog: st === 1 ? 1 : 0 };
+}
+function calcStage(stage) {
+  var t = 0, d = 0, p = 0;
+  if (stage.type === 'daily') {
+    (stage.weeks || []).forEach(function (w) { var s = calcWeek(stage.id, w); t += s.total; d += s.done; p += s.prog; });
+  } else {
+    (stage.blocks || []).forEach(function (b) { var s = calcBlock(stage.id, b); t += s.total; d += s.done; p += s.prog; });
+  }
+  return { total: t, done: d, prog: p, pct: t ? Math.round(d / t * 100) : 0 };
+}
+function calcGlobal() {
+  var t = 0, d = 0, p = 0;
+  STAGES.forEach(function (s) { var r = calcStage(s); t += r.total; d += r.done; p += r.prog; });
+  return { total: t, done: d, prog: p, pct: t ? Math.round(d / t * 100) : 0 };
+}
+
+/* ============================================================
+   5. 当前周高亮
+   扁平周序号 = floor((today - planStart)/7天) + 1（planStart 当天 = 1）
+   映射到全局扁平周序号（s1 的 8 周为 1-8，s2 的 6 周为 9-14）
+   ============================================================ */
+function parseISODate(str) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(str || ''));
+  if (!m) return null;
+  return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+}
+var FLAT_INDEX = {};        /* stageId|weekLabel -> 1-based flat index */
+var CURRENT_FLAT = -1;      /* 当前扁平周序号，<=0 表示不高亮 */
+(function buildWeekIndex() {
+  var idx = 0, planStart, days, flat;
+  STAGES.forEach(function (stage) {
+    if (stage.type !== 'daily') return;
+    (stage.weeks || []).forEach(function (w) {
+      idx++;
+      FLAT_INDEX[stage.id + '|' + w.label] = idx;
+    });
+  });
+  planStart = parseISODate(META.planStart);
+  if (!planStart) { CURRENT_FLAT = -1; return; }
+  var now = new Date(); now.setHours(0, 0, 0, 0);
+  days = Math.floor((now.getTime() - planStart.getTime()) / 86400000);
+  flat = Math.floor(days / 7) + 1;                     /* planStart 当天对应扁平周 1 */
+  CURRENT_FLAT = (flat >= 1 && flat <= idx) ? flat : -1;
+})();
+
+/* ============================================================
+   6. 展开/收起状态（默认全部展开）
+   ============================================================ */
+var expandState = {}; /* "stageId|weekLabel" -> bool */
+
+/* ============================================================
+   7. 渲染：进度卡
+   ============================================================ */
+function progressCardHtml(stats) {
+  return '' +
+    '<div class="progress-card"><div class="value">' + stats.total + '</div><div class="label">总打卡项</div></div>' +
+    '<div class="progress-card"><div class="value" style="color:#059669">' + stats.done + '</div><div class="label">已完成</div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + stats.pct + '%;background:#059669"></div></div></div>' +
+    '<div class="progress-card"><div class="value" style="color:#D97706">' + stats.prog + '</div><div class="label">进行中</div></div>' +
+    '<div class="progress-card"><div class="value">' + stats.pct + '%</div><div class="label">完成率</div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + stats.pct + '%"></div></div></div>';
+}
+function renderGlobalProgress() {
+  var el = document.getElementById('globalProgress');
+  if (el) el.innerHTML = progressCardHtml(calcGlobal());
+}
+function renderStageProgress(stageId) {
+  var el = document.getElementById('progress-' + stageId);
+  var stage = stageById(stageId);
+  if (el && stage) el.innerHTML = progressCardHtml(calcStage(stage));
+}
+
+/* ============================================================
+   8. 渲染：Tab
+   ============================================================ */
+function shortName(stage, idx) {
+  for (var i = 0; i < TAB_META.length; i++) if (TAB_META[i].id === stage.id) return TAB_META[i].short;
+  return '阶段' + (idx + 1);
+}
+function renderTabs() {
+  var nav = document.getElementById('tabNav');
+  var panels = document.getElementById('panels');
+  var navHtml = '', panelHtml = '';
+  STAGES.forEach(function (stage, idx) {
+    var active = idx === 0 ? ' active' : '';
+    navHtml += '<button class="tab-btn' + active + '" data-tab="' + escHtml(stage.id) + '">' + escHtml(shortName(stage, idx)) + '</button>';
+    panelHtml += '<div class="tab-panel' + active + '" id="panel-' + escHtml(stage.id) + '"></div>';
+  });
+  navHtml += '<button class="tab-btn" data-tab="resources">📚 资源</button>';
+  panelHtml += '<div class="tab-panel" id="panel-resources"></div>';
+  nav.innerHTML = navHtml;
+  panels.innerHTML = panelHtml;
+}
+
+/* ============================================================
+   9. 渲染：阶段概览
+   ============================================================ */
+function overviewHtml(stage, isFirst) {
+  var h = '<div class="stage-overview">';
+  if (isFirst && META.positioning) {
+    h += '<div class="stage-positioning">📍 ' + nl2br(META.positioning) + '</div>';
+  }
+  h += '<h2 class="stage-name">' + escHtml(stage.name) + '</h2>';
+  if (stage.time) h += '<div class="stage-time">⏰ ' + escHtml(stage.time) + '</div>';
+  if (stage.intro) h += '<div class="stage-goal">' + nl2br(stage.intro) + '</div>';
+  h += '<button class="collapsible-btn" data-adjust="' + escHtml(stage.id) + '" aria-expanded="false">📌 查看调整说明 <span class="cb-arrow">▼</span></button>';
+  h += '<div class="adjust-panel" id="adjust-' + escHtml(stage.id) + '" hidden>';
+  h += '<div class="adjust-section"><h3>📋 核心调整（' + OVERVIEW.adjustments.length + ' 条）</h3><ul>';
+  OVERVIEW.adjustments.forEach(function (a) {
+    h += '<li>' + (a.tag ? '<span class="adj-tag">' + escHtml(a.tag) + '</span>' : '') +
+         '<span class="adj-text">' + escHtml(a.text) + '</span></li>';
+  });
+  h += '</ul></div></div>';
+  h += '</div>';
+  return h;
+}
+
+/* ============================================================
+   10. 渲染：可打卡/占位区块
+   ============================================================ */
+function sectionHtml(stage, group, dayOrCore, sec, content) {
+  if (!isCheckable(content)) {
+    return '<div class="section-block placeholder" data-checkable="0">' +
+      '<div class="section-check"></div>' +
+      '<div class="section-body">' +
+        '<div class="section-label">' + sec.icon + ' ' + escHtml(sec.label) + '</div>' +
+        '<div class="section-text"><span class="muted">—</span></div>' +
+      '</div></div>';
+  }
+  var st = getStatus(stage.id, group, dayOrCore, sec.key);
+  return '<div class="section-block" data-checkable="1" data-status="' + st + '"' +
+      ' data-stage="' + escHtml(stage.id) + '" data-group="' + escHtml(group) + '"' +
+      ' data-day="' + escHtml(dayOrCore) + '" data-section="' + escHtml(sec.key) + '"' +
+      ' title="点击切换状态：未开始 → 进行中 → 已完成">' +
+      '<div class="section-check">' + (st === 2 ? '✓' : (st === 1 ? '⋯' : '')) + '</div>' +
+      '<div class="section-body">' +
+        '<div class="section-label">' + sec.icon + ' ' + escHtml(sec.label) + '</div>' +
+        '<div class="section-text">' + nl2br(content) + '</div>' +
+      '</div></div>';
+}
+
+/* ============================================================
+   11. 渲染：daily 阶段（周 -> 天）
+   ============================================================ */
+function dayCardHtml(stage, week, day) {
+  var stats = calcDay(stage.id, week.label, day);
+  var h = '<div class="day-card">';
+  h += '<div class="day-header"><span class="day-title">' + escHtml(day.day) + '</span>' +
+       '<span class="day-badge">' + stats.done + '/' + stats.total + '</span></div>';
+  SECTIONS.forEach(function (sec) {
+    h += sectionHtml(stage, week.label, day.day, sec, day[sec.key]);
+  });
+  if (isCheckable(day.standard)) {
+    h += '<div class="standard-bar"><span class="standard-label">🎯 达标标准</span>' +
+         '<span class="standard-text">' + nl2br(day.standard) + '</span></div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function weekHtml(stage, week) {
+  var wkKey = stage.id + '|' + week.label;
+  var isBuffer = !!week.is_buffer;
+  var isCurrent = (FLAT_INDEX[wkKey] === CURRENT_FLAT) && CURRENT_FLAT > 0;
+  var expanded = expandState[wkKey] !== false;
+  var stats = calcWeek(stage.id, week);
+
+  var subtitle = week.dates ? escHtml(week.dates) : '';
+  if (week.title) subtitle += (subtitle ? ' · ' : '') + escHtml(week.title);
+
+  var h = '<div class="week-group" data-weekkey="' + escHtml(wkKey) + '">';
+  h += '<div class="week-header' + (isBuffer ? ' buffer-week' : '') + (isCurrent ? ' current-week' : '') + (expanded ? '' : ' collapsed') + '" data-weekkey="' + escHtml(wkKey) + '">';
+  h += '<span class="arrow">▼</span>';
+  h += '<span class="week-title">' + escHtml(week.label) + '</span>';
+  if (subtitle) h += '<span class="week-subtitle">' + subtitle + '</span>';
+  if (isBuffer) h += '<span class="week-badge buffer-badge">缓冲周</span>';
+  if (isCurrent) h += '<span class="week-badge current-badge">当前周</span>';
+  h += '<span class="week-meta">' + stats.done + '/' + stats.total + '</span>';
+  h += '</div>';
+
+  h += '<div class="week-body' + (expanded ? '' : ' collapsed') + '">';
+  var lines = '';
+  if (week.dates) lines += '<span class="week-dates">📅 ' + escHtml(week.dates) + '</span>';
+  if (week.goal) lines += '<span class="week-goal-txt">🎯 周目标：' + escHtml(week.goal) + '</span>';
+  if (week.note) lines += '<span class="week-note">✎ ' + escHtml(week.note) + '</span>';
+  if (lines) h += '<div class="week-meta-line">' + lines + '</div>';
+  (week.days || []).forEach(function (day) { h += dayCardHtml(stage, week, day); });
+  h += '</div></div>';
+  return h;
+}
+
+function renderDailyStage(stage) {
+  var h = '<div class="main-container">';
+  h += overviewHtml(stage, stage.id === 's1');
+  h += '<div class="progress-grid" id="progress-' + escHtml(stage.id) + '"></div>';
+  h += '<div class="toolbar">' +
+         '<input class="search-input" type="text" placeholder="🔍 搜索本阶段任务关键词…" data-search="' + escHtml(stage.id) + '">' +
+         '<span class="search-hint" id="searchhint-' + escHtml(stage.id) + '"></span>' +
+         '<button class="btn active-btn" data-expand="' + escHtml(stage.id) + '">📁 全部收起</button>' +
+       '</div>';
+  h += '<div class="week-list" id="list-' + escHtml(stage.id) + '">';
+  (stage.weeks || []).forEach(function (w) { h += weekHtml(stage, w); });
+  h += '</div></div>';
+  return h;
+}
+
+/* ============================================================
+   12. 渲染：block 阶段（块卡片）
+   ============================================================ */
+function blockCardHtml(stage, block) {
+  var stats = calcBlock(stage.id, block);
+  var h = '<div class="block-card">';
+  h += '<div class="block-header"><div class="block-head-main">' +
+         '<span class="block-label">' + escHtml(block.label) + '</span>' +
+         (block.dates ? '<span class="block-dates">' + escHtml(block.dates) + '</span>' : '') +
+       '</div>' +
+       '<span class="block-badge">' + stats.done + '/' + stats.total + '</span></div>';
+  if (block.theme) h += '<div class="block-theme">' + escHtml(block.theme) + '</div>';
+  if (block.title && block.title !== block.theme) h += '<div class="block-title">' + escHtml(block.title) + '</div>';
+  h += sectionHtml(stage, block.label, 'core', BLOCK_SECTION, block.core);
+  if (isCheckable(block.output)) {
+    h += '<div class="standard-bar"><span class="standard-label">🎯 关键产出</span>' +
+         '<span class="standard-text">' + nl2br(block.output) + '</span></div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderBlockStage(stage) {
+  var h = '<div class="main-container">';
+  h += overviewHtml(stage, false);
+  h += '<div class="progress-grid" id="progress-' + escHtml(stage.id) + '"></div>';
+  h += '<div class="toolbar">' +
+         '<input class="search-input" type="text" placeholder="🔍 搜索本阶段任务关键词…" data-search="' + escHtml(stage.id) + '">' +
+         '<span class="search-hint" id="searchhint-' + escHtml(stage.id) + '"></span>' +
+       '</div>';
+  h += '<div class="block-list" id="list-' + escHtml(stage.id) + '">';
+  (stage.blocks || []).forEach(function (b) { h += blockCardHtml(stage, b); });
+  h += '</div></div>';
+  return h;
+}
+
+/* ============================================================
+   13. 渲染：资源
+   ============================================================ */
+function renderResources() {
+  var panel = document.getElementById('panel-resources');
+  if (!panel) return;
+  var order = [], map = {};
+  RESOURCES.forEach(function (r) {
+    if (!map[r.category]) { map[r.category] = []; order.push(r.category); }
+    map[r.category].push(r);
+  });
+  var h = '<div class="main-container">';
+  h += '<div class="resource-summary">共 ' + RESOURCES.length + ' 条资源 · ' + order.length + ' 个分类</div>';
+  order.forEach(function (cat) {
+    h += '<div class="resource-group">';
+    h += '<h2 class="resource-cat">' + escHtml(cat) + '</h2>';
+    map[cat].forEach(function (r) {
+      h += '<div class="resource-card"><div class="resource-name">' + escHtml(r.name) + '</div>' +
+           (r.desc ? '<div class="resource-desc">' + escHtml(r.desc) + '</div>' : '') + '</div>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  panel.innerHTML = h;
+}
+
+/* ============================================================
+   14. 渲染：全部
+   ============================================================ */
+function renderAll() {
+  if (META.title) document.getElementById('appTitle').textContent = META.title;
+  renderTabs();
+  renderGlobalProgress();
+  STAGES.forEach(function (stage) {
+    var panel = document.getElementById('panel-' + stage.id);
+    if (!panel) return;
+    panel.innerHTML = (stage.type === 'daily') ? renderDailyStage(stage) : renderBlockStage(stage);
+    renderStageProgress(stage.id);
+  });
+  renderResources();
+}
+
+/* ============================================================
+   15. 局部更新（增量，保留滚动位置）
+   ============================================================ */
+function findWeek(stage, weekLabel) {
+  var weeks = stage.weeks || [];
+  for (var i = 0; i < weeks.length; i++) if (weeks[i].label === weekLabel) return weeks[i];
+  return null;
+}
+function findDay(week, dayName) {
+  var days = week.days || [];
+  for (var i = 0; i < days.length; i++) if (days[i].day === dayName) return days[i];
+  return null;
+}
+function findBlock(stage, blockLabel) {
+  var blocks = stage.blocks || [];
+  for (var i = 0; i < blocks.length; i++) if (blocks[i].label === blockLabel) return blocks[i];
+  return null;
+}
+
+function onToggleSection(sec) {
+  if (sec.dataset.checkable !== '1') return;
+  var stageId = sec.dataset.stage;
+  var group = sec.dataset.group;
+  var day = sec.dataset.day;
+  var section = sec.dataset.section;
+  var cur = getStatus(stageId, group, day, section);
+  var next = NEXT[cur];
+  state[statusKey(stageId, group, day, section)] = next;
+  saveState();
+
+  /* 只更新被点击的元素 */
+  sec.dataset.status = String(next);
+  var chk = sec.querySelector('.section-check');
+  if (chk) chk.textContent = next === 2 ? '✓' : (next === 1 ? '⋯' : '');
+
+  var stage = stageById(stageId);
+  if (!stage) return;
+
+  if (stage.type === 'daily') {
+    var week = findWeek(stage, group);
+    if (week) {
+      var card = sec.closest('.day-card');
+      var d = findDay(week, day);
+      if (card && d) {
+        var ds = calcDay(stageId, group, d);
+        var badge = card.querySelector('.day-badge');
+        if (badge) badge.textContent = ds.done + '/' + ds.total;
+      }
+      var groupEl = sec.closest('.week-group');
+      if (groupEl) {
+        var ws = calcWeek(stageId, week);
+        var meta = groupEl.querySelector('.week-meta');
+        if (meta) meta.textContent = ws.done + '/' + ws.total;
+      }
+    }
+  } else {
+    var block = findBlock(stage, group);
+    if (block) {
+      var bcard = sec.closest('.block-card');
+      if (bcard) {
+        var bs = calcBlock(stageId, block);
+        var bbadge = bcard.querySelector('.block-badge');
+        if (bbadge) bbadge.textContent = bs.done + '/' + bs.total;
+      }
+    }
+  }
+  renderStageProgress(stageId);
+  renderGlobalProgress();
+}
+
+/* ============================================================
+   16. 交互：折叠周 / 全部展开收起 / 调整说明 / 搜索 / Tab
+   ============================================================ */
+function toggleWeek(hdr) {
+  var wkKey = hdr.dataset.weekkey;
+  var expanded = !(expandState[wkKey] !== false); /* 取反 */
+  expandState[wkKey] = expanded;
+  hdr.classList.toggle('collapsed', !expanded);
+  var body = hdr.nextElementSibling;
+  if (body) body.classList.toggle('collapsed', !expanded);
+  var sep = wkKey.indexOf('|'); /* weekkey = stageId|weekLabel，取 stageId 口径与 applySearch 一致 */
+  if (sep > 0) syncExpandButton(wkKey.slice(0, sep));
+}
+
+function toggleExpandAll(btn) {
+  var stageId = btn.dataset.expand;
+  var list = document.getElementById('list-' + stageId);
+  if (!list) return;
+  var headers = list.querySelectorAll('.week-header');
+  if (!headers.length) return;
+  var allExpanded = true;
+  headers.forEach(function (h) { if (expandState[h.dataset.weekkey] === false) allExpanded = false; });
+  var target = !allExpanded; /* 全展开 -> 收起；否则 -> 全部展开 */
+  headers.forEach(function (h) {
+    expandState[h.dataset.weekkey] = target;
+    h.classList.toggle('collapsed', !target);
+    var body = h.nextElementSibling;
+    if (body) body.classList.toggle('collapsed', !target);
+  });
+  syncExpandButton(stageId);
+}
+
+/* 依据 expandState 同步“全部收起/展开”按钮的文案与高亮（唯一判据来源） */
+function syncExpandButton(stageId) {
+  var btn = document.querySelector('[data-expand="' + stageId + '"]');
+  var list = document.getElementById('list-' + stageId);
+  if (!btn || !list) return;
+  var headers = list.querySelectorAll('.week-header');
+  if (!headers.length) return;
+  var allExpanded = true;
+  headers.forEach(function (h) { if (expandState[h.dataset.weekkey] === false) allExpanded = false; });
+  btn.classList.toggle('active-btn', allExpanded);
+  btn.textContent = allExpanded ? '📁 全部收起' : '📂 全部展开';
+}
+
+function toggleAdjust(btn) {
+  var panel = document.getElementById('adjust-' + btn.dataset.adjust);
+  if (!panel) return;
+  var wasHidden = panel.hidden;
+  panel.hidden = !wasHidden;
+  btn.setAttribute('aria-expanded', wasHidden ? 'true' : 'false');
+  var arrow = btn.querySelector('.cb-arrow');
+  if (arrow) arrow.textContent = wasHidden ? '▲' : '▼';
+}
+
+function applySearch(input) {
+  var stageId = input.dataset.search;
+  var list = document.getElementById('list-' + stageId);
+  if (!list) return;
+  var q = input.value.trim().toLowerCase();
+  var stage = stageById(stageId);
+  var isDaily = !!(stage && stage.type === 'daily');
+  var shown = 0;
+
+  if (isDaily) {
+    /* 逐周分组：命中卡片保留在组内，组内 0 命中则隐藏整个分组容器（避免空壳） */
+    list.querySelectorAll('.week-group').forEach(function (g) {
+      var groupHits = 0;
+      g.querySelectorAll('.day-card').forEach(function (c) {
+        var match = !q || c.textContent.toLowerCase().indexOf(q) !== -1;
+        c.classList.toggle('search-hidden', !match);
+        if (match) groupHits++;
+      });
+      g.classList.toggle('search-hidden', !!q && groupHits === 0);
+      shown += groupHits;
+    });
+  } else {
+    /* 块阶段：每张 .block-card 既是内容卡也是分组容器，命中即显示，否则整卡隐藏 */
+    list.querySelectorAll('.block-card').forEach(function (c) {
+      var match = !q || c.textContent.toLowerCase().indexOf(q) !== -1;
+      c.classList.toggle('search-hidden', !match);
+      if (match) shown++;
+    });
+  }
+
+  var hint = document.getElementById('searchhint-' + stageId);
+  if (hint) hint.textContent = q ? ('匹配 ' + shown + ' 张卡片') : '';
+
+  if (isDaily) {
+    /* 搜索时自动展开，并同步 expandState，保证与「全部收起/展开」按钮判据一致 */
+    if (q) {
+      list.querySelectorAll('.week-group').forEach(function (g) {
+        var hdr = g.querySelector('.week-header');
+        var body = g.querySelector('.week-body');
+        if (hdr) { hdr.classList.remove('collapsed'); expandState[hdr.dataset.weekkey] = true; }
+        if (body) body.classList.remove('collapsed');
+      });
+    }
+    syncExpandButton(stageId);
+  }
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function (p) {
+    p.classList.toggle('active', p.id === 'panel-' + tabId);
+  });
+}
+
+/* ============================================================
+   17. 主题
+   ============================================================ */
+function setDark(isDark) {
+  if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  var t = document.getElementById('themeToggle');
+  if (t) t.innerHTML = isDark ? '☀️ 浅色模式' : '🌙 深色模式';
+}
+function initTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch (e) { saved = null; }
+  setDark(saved === 'dark');
+}
+var themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', function () {
+    var nextDark = document.documentElement.getAttribute('data-theme') !== 'dark';
+    setDark(nextDark);
+    try { localStorage.setItem(THEME_KEY, nextDark ? 'dark' : 'light'); } catch (e) {}
+  });
+}
+
+/* ============================================================
+   18. 事件委托
+   ============================================================ */
+document.addEventListener('click', function (e) {
+  var tabBtn = e.target.closest('.tab-btn');
+  if (tabBtn) { switchTab(tabBtn.dataset.tab); return; }
+
+  var adjBtn = e.target.closest('.collapsible-btn');
+  if (adjBtn) { toggleAdjust(adjBtn); return; }
+
+  var expBtn = e.target.closest('[data-expand]');
+  if (expBtn) { toggleExpandAll(expBtn); return; }
+
+  var sec = e.target.closest('.section-block');
+  if (sec) { onToggleSection(sec); return; }
+
+  var wkHdr = e.target.closest('.week-header');
+  if (wkHdr) { toggleWeek(wkHdr); return; }
+});
+
+document.addEventListener('input', function (e) {
+  var inp = e.target.closest('.search-input');
+  if (inp) applySearch(inp);
+});
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' || e.keyCode === 27) {
+    var inp = e.target.closest('.search-input');
+    if (inp) { inp.value = ''; applySearch(inp); }
+  }
+});
+
+/* ============================================================
+   19. 启动
+   ============================================================ */
+initTheme();
+renderAll();
+
+})();
+</script>
+</body>
+</html>
