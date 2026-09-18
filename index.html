@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学习打卡 · 全阶段规划（校历精确最终版）</title>
+<title>学习打卡 · 全阶段规划（轻量化细化版v3）</title>
 <style>
 /* ============================================================
-   学习打卡 · 校历精确最终版
-   单文件 / 零依赖 / 数据内嵌
+   学习打卡 · 轻量化细化版v3 · 条目级打卡（item-level）
+   单文件 / 零依赖 / 数据内嵌 / 区块数据驱动
+   每个 section.items 中的 task 条目各自独立打卡；head 为分组小标题不可打卡
    ============================================================ */
 :root{
   --primary:#4472C4;
@@ -272,6 +273,7 @@ body{
 }
 .search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--accent-soft);}
 .search-hint{font-size:0.78rem;color:var(--text-secondary);}
+.section-hide-note{font-size:0.78rem;color:var(--text-secondary);opacity:0.85;}
 
 /* ===== Week groups ===== */
 .week-group{margin-bottom:12px;}
@@ -325,10 +327,12 @@ body{
   box-shadow:var(--shadow);
   transition:background var(--transition);
 }
+.day-card.rest-day{background:linear-gradient(135deg,var(--card-bg),rgba(139,92,246,0.06));border-color:var(--buffer-border);}
 .day-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  gap:8px;
   font-weight:700;
   font-size:0.9rem;
   color:var(--primary);
@@ -336,29 +340,104 @@ body{
   margin-bottom:4px;
   border-bottom:1px dashed var(--border);
 }
+.day-head-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
 .day-badge{font-size:0.75rem;padding:1px 8px;border-radius:10px;background:var(--primary-light);color:var(--primary);font-weight:600;}
+.rest-badge{font-size:0.72rem;padding:1px 8px;border-radius:10px;background:var(--buffer-bg);color:var(--buffer-text);font-weight:600;}
 
-/* ===== Checkable section blocks ===== */
+/* ===== Checkable section grid (条目级 / 数据驱动) ===== */
+.section-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:6px;
+  margin-top:6px;
+  align-items:start;
+}
 .section-block{
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  border-left:4px solid var(--primary);
+  background:var(--card-bg);
+  transition:all var(--transition);
+}
+.section-label{font-weight:600;font-size:0.8rem;color:var(--text);}
+
+/* 占位区块：items 为空 —— 灰色「—」，不可点击 */
+.section-block.placeholder{
   display:flex;
   align-items:flex-start;
   gap:10px;
   padding:9px 12px;
-  margin:6px 0;
-  border-radius:var(--radius-sm);
-  border:1px solid var(--border);
-  background:var(--card-bg);
+  cursor:default;
+  opacity:0.7;
+  background:transparent;
+}
+.section-block.placeholder:hover{border-color:var(--border);box-shadow:none;}
+.section-block.placeholder .section-check{visibility:hidden;}
+.section-body{flex:1;min-width:0;}
+.section-text{font-size:0.86rem;line-height:1.5;color:var(--text);}
+.section-text .muted{color:var(--text-secondary);}
+
+/* A. 单条目区块（1 个 task 且无 head）—— 紧凑可打卡行 */
+.section-block.single{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:8px 12px;
+  cursor:pointer;
+}
+.section-block.single:hover{border-color:var(--primary);box-shadow:var(--shadow);}
+.section-block.single[data-status="1"]{background:var(--warning-bg);border-color:#F59E0B;}
+.section-block.single[data-status="2"]{background:var(--success-bg);border-color:#16A34A;}
+.single-label{font-weight:600;font-size:0.8rem;color:var(--text);white-space:nowrap;flex-shrink:0;}
+.single-text{font-size:0.86rem;line-height:1.5;color:var(--text);min-width:0;flex:1;word-break:break-word;}
+.section-block.single[data-status="1"] .single-label,
+.section-block.single[data-status="1"] .single-text{color:var(--warning-text);}
+.section-block.single[data-status="2"] .single-label,
+.section-block.single[data-status="2"] .single-text{color:var(--success-text);}
+.section-block.single[data-status="2"] .single-text{text-decoration:line-through;}
+
+/* B. 多条目区块 —— 卡片：头 + x/y 徽章 + head + 独立可打卡行 */
+.section-block.multi{padding:9px 12px;}
+.section-block-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.section-block.multi .section-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.section-badge{
+  font-size:0.72rem;
+  font-weight:700;
+  color:var(--primary);
+  background:var(--primary-light);
+  padding:1px 8px;
+  border-radius:10px;
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.section-items{display:flex;flex-direction:column;gap:3px;}
+.item-head{
+  font-size:0.75rem;
+  color:var(--text-secondary);
+  font-weight:600;
+  padding:1px 0 1px 2px;
+  letter-spacing:0.02em;
+}
+.item-row{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:5px 8px;
+  border-radius:6px;
   cursor:pointer;
   transition:all var(--transition);
 }
-.section-block:hover{border-color:var(--primary);box-shadow:var(--shadow);}
-.section-block[data-status="1"]{background:var(--warning-bg);border-color:#F59E0B;}
-.section-block[data-status="2"]{background:var(--success-bg);border-color:#16A34A;}
-.section-block.placeholder{cursor:default;opacity:0.75;}
-.section-block.placeholder:hover{border-color:var(--border);box-shadow:none;}
+.item-row:hover{background:var(--accent-soft);}
+.item-row[data-status="1"]{background:var(--warning-bg);}
+.item-row[data-status="2"]{background:var(--success-bg);}
+.item-text{font-size:0.86rem;line-height:1.5;color:var(--text);min-width:0;flex:1;word-break:break-word;}
+.item-row[data-status="1"] .item-text{color:var(--warning-text);}
+.item-row[data-status="2"] .item-text{color:var(--success-text);text-decoration:line-through;}
+
+/* 圆形复选框（三态：未开始 / ⋯进行中 / ✓已完成） */
 .section-check{
-  width:22px;
-  height:22px;
+  width:20px;
+  height:20px;
   border-radius:50%;
   border:2px solid var(--border);
   flex-shrink:0;
@@ -372,16 +451,8 @@ body{
   color:transparent;
   font-weight:700;
 }
-.section-block[data-status="1"] .section-check{border-color:#F59E0B;background:#FEF3C7;color:transparent;}
-.section-block[data-status="2"] .section-check{background:var(--success-text);border-color:var(--success-text);color:#fff;}
-.section-body{flex:1;min-width:0;}
-.section-label{font-weight:600;font-size:0.8rem;margin-bottom:2px;color:var(--text);}
-.section-block[data-status="1"] .section-label{color:var(--warning-text);}
-.section-block[data-status="2"] .section-label{color:var(--success-text);}
-.section-text{font-size:0.88rem;line-height:1.55;word-break:break-word;color:var(--text);}
-.section-block[data-status="1"] .section-text{color:var(--warning-text);}
-.section-block[data-status="2"] .section-text{color:var(--success-text);text-decoration:line-through;}
-.section-text .muted{color:var(--text-secondary);}
+.checkable[data-status="1"] .section-check{border-color:#F59E0B;background:#FEF3C7;color:transparent;}
+.checkable[data-status="2"] .section-check{background:var(--success-text);border-color:var(--success-text);color:#fff;}
 
 /* ===== Standard / output (non-checkable) bar ===== */
 .standard-bar{
@@ -452,8 +523,10 @@ body{
   .day-card{margin-left:6px;}
   .week-header{padding:10px 12px;gap:6px;}
   .week-subtitle{display:none;}
-  .section-block{padding:8px 10px;gap:8px;}
-  .section-text{font-size:0.84rem;}
+  .section-grid{grid-template-columns:1fr;}
+  .section-block.single{padding:7px 10px;gap:7px;}
+  .section-block.multi{padding:8px 10px;}
+  .single-text,.item-text,.section-text{font-size:0.84rem;}
   .standard-bar{flex-direction:column;gap:2px;}
   .week-body{padding-left:0;}
 }
@@ -470,7 +543,7 @@ body{
   <div class="header-inner">
     <div class="app-title">
       <span class="icon">📚</span>
-      <span id="appTitle">学习打卡 · 全阶段规划（校历精确最终版）</span>
+      <span id="appTitle">学习打卡 · 全阶段规划（轻量化细化版v3）</span>
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙 深色模式</button>
@@ -492,13 +565,12 @@ body{
 <div id="panels"></div>
 
 <footer class="app-footer">
-  <p>打卡数据保存在浏览器本地 · 点击任务区块切换状态：未开始 → 进行中 → 已完成</p>
+  <p>打卡数据保存在浏览器本地 · 点击任务条目切换状态：未开始 → 进行中 → 已完成</p>
 </footer>
 
-<!-- ===== Embedded task data (由 build 脚本从 task_data.json 注入) ===== -->
-<script type="application/json" id="taskDataJson">{"meta":{"title":"全阶段每日学习打卡表（校历精确最终版）","positioning":"定位：民办本科大二（2026.9.13=大二上第2周周日）| 目标：2027年暑假（大二结束）拿中小公司/远程「暑假里的实习」，2028年大三暑假冲正式暑期实习 | 技术路线：Python后端→RAG/LangGraph Agent | 校历：期末考第17-18周，Web实训第19周，六级笔试12.12（第15周周四）","planStart":"2026-09-14","startWeek":3},"overview":{"stages":[{"name":"阶段一 基础夯实\n第3-10周","time":"2026.9.14-11.8","tasks":"Python基础→面向对象→数据结构精简→MySQL→FastAPI→ORM→Git→Linux→JS→Nginx\n待办事项全栈项目完成首次公网部署","output":"待办项目（公网可访问）+ GitHub仓库 + Linux部署能力"},{"name":"阶段二 项目实战+六级\n第11-16周","time":"2026.11.9-12.20","tasks":"二手平台后端+前端联调+Docker容器化部署上线\nAgent基础（API/Function Call/Prompt/RAG入门）\n六级笔试12.12+口语11.21-22","output":"二手平台（Docker公网上线）+ 大模型调用能力 + 六级成绩"},{"name":"第17-18周 期末考试","time":"2026.12.21-2027.1.3","tasks":"全力复习期末，保证不挂科；每天20分钟保持技术认知","output":"期末考试成绩稳定"},{"name":"第19周 Web实训","time":"2027.1.4-1.10","tasks":"白天学校实训+成果复用项目前端；晚上知识库Agent基础框架搭建","output":"实训作业 + 知识库Agent框架雏形"},{"name":"阶段三 Agent攻坚\n寒假第1-6周","time":"2027.1.11起约6周","tasks":"RAG深度进阶+RAGAS评估→知识库Agent上线（含评估数据）→LangGraph专项5天→电商客服多智能体","output":"2个Agent项目（第一个高质量带数据，第二个带量化指标）"},{"name":"阶段四 求职冲刺\n大二下学期","time":"2027.3-8月","tasks":"简历打磨+八股背诵+批量投递面试；暑假入职中小公司/远程日常实习","output":"一段真实实习 + 简历 + 为2028暑期实习铺路"}],"adjustments":[{"tag":"校历对齐","text":"当前=大二上第2周周日，下周进入第3周；第17-18周期末考试、第19周Web实训全部落实；六级笔试12.12(第15周周四)、口语11.21-22(第12周)"},{"tag":"跳步修正1","text":"第3周砍掉正则（移到阶段二），优先保证文件读写+异常处理；HTML提前到周二晚30分钟预览"},{"tag":"跳步修正2","text":"第5周插入30分钟递归基础专题（阶乘/斐波那契/目录遍历），再进入数据结构"},{"tag":"跳步修正3","text":"第4周周四加20分钟Python类型注解专题（FastAPI/Pydantic硬前置）"},{"tag":"跳步修正4","text":"第9周JS顺序重排：周一JS核心、周二DOM+事件、周三Fetch+Promise+async再联调（不再先联调后学）"},{"tag":"跳步修正5","text":"第10周周四加1小时需求分析与三层架构专题（用户故事/表设计/分层），再启动二手平台"},{"tag":"跳步修正6","text":"第11周周一加JWT认证授权专题（Session vs JWT/签发校验/依赖注入）"},{"tag":"跳步修正7","text":"Linux独立成模块（第9-10周）：文件/权限/进程/SSH/包管理→问题排查/systemd/Nginx；验收=能独立部署排查Python服务"},{"tag":"跳步修正8","text":"第14周加Python异步与HTTP客户端专题（async/await/httpx/SSE），先于大模型流式调用"},{"tag":"跳步修正9","text":"第14周加30分钟JSON Schema基础（Function Call硬前置）"},{"tag":"跳步修正10","text":"Docker前置独立学习（第12周）→第13周容器化部署上线；寒假不再第一次接触Docker"},{"tag":"跳步修正11","text":"寒假第5周前安排5天LangGraph专项（StateGraph/条件边/Checkpoint/多智能体/重写单Agent），再进入多智能体项目"},{"tag":"跳步修正12","text":"第19周只做知识库Agent基础框架+基础RAG，深度优化放寒假第2周（顺序修正）"},{"tag":"投递策略","text":"11月启动日常实习投递练手（全年滚动），优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习"},{"tag":"量化评估","text":"知识库Agent用20-50条问答测试集+RAGAS；客服智能体用20-30轮模拟对话测试，注明测试方法"},{"tag":"资源替换","text":"删JavaGuide主八股，换Python后端面试专项+LLM-Interview；新增AI编程工具（Cursor/Claude Code）要求"},{"tag":"六级策略","text":"四级464起点：每天碎片时间背词+听力精听必做；考前4周每周2套真题；口语11月、笔试12.12；过线概率约五到六成，不喧宾夺主"}]},"stages":[{"id":"s1","name":"阶段一：基础夯实","time":"第3-10周 · 2026.9.14-11.8","intro":"目标：Python基础→面向对象→数据结构→MySQL→FastAPI→ORM→Git→Linux→JS→Nginx，完成待办项目首次公网部署\n跳步修正：正则后移、递归专题(第5周)、类型注解专题(第4周)、JS顺序重排(第9周)、需求分析专题(第10周)；Linux独立成模块(第9-10周)","type":"daily","weeks":[{"label":"第3周","dates":"9.14-9.20","title":"Python核心语法筑基","goal":"掌握基础语法+函数+常用数据结构","note":"跳步修正：砍掉正则，HTML提前预览","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：六级高频词50个（四级464起点，词汇优先）\n② 电子电路课上：泛听六级听力磨耳朵","school":"上午：电子电路基础课（保证出勤）","tech":"下午+晚上：\n1. 基础：变量、数据类型、输入输出\n2. 分支结构、循环结构+配套练习\n3. 函数定义、参数、返回值","standard":"不查资料能独立写出10个不同功能的自定义函数"},{"day":"周二","cet6":"① 早课前：复习昨日单词+新词20个\n② 离散课上：背单词碎片记忆","school":"上午：离散数学课\n晚上：Java程序设计课（对应理解Python）","tech":"下午：\n1. 列表、元组常用操作+练习\n2. 字典、集合常用操作+练习\n3. 【30分钟HTML入门预览】常用标签认知\n课后：对比Java与Python基础语法","standard":"能用列表+字典实现简易学生名单增删改查；认识常用HTML标签"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：精听1篇六级听力（听两遍，对照原文）","school":"无课，全天自主安排","tech":"上午：字符串高级操作（正则砍掉，移到阶段二）\n下午：文件读写、异常捕获与处理\n晚上：命令行学生管理系统v1（数据存txt）","standard":"程序能完整运行，支持增删改查，数据持久化到文件，异常输入不崩溃"},{"day":"周四","cet6":"① 早课前：复习本周单词\n② 思政/选修课上：泛听听力","school":"上午：公共课\n下午：思政类课程（出勤即可）","tech":"晚上：\n1. 内置常用模块（os/datetime/random）\n2. 代码规范、命名规范","standard":"能熟练导入常用模块，完成文件批量重命名小脚本"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课上：同步练组件","school":"下午：Web前端技术课「自主学习」\n内容：HTML核心常用标签 + Bootstrap5入门（栅格、表单、卡片）","tech":"晚上：\n1. 落地练习：用Bootstrap拼待办事项静态页面框架\n2. Python本周知识点复盘","standard":"能快速拼出整洁的表单+列表页面；Python本周无盲区"},{"day":"周六","cet6":"上午9:00-10:30：六级阅读专项（重点练长难句定位）","school":"—","tech":"下午：学生管理系统优化，增加异常处理\n晚上：Python基础查漏补缺","standard":"程序健壮，异常输入不崩溃"},{"day":"周日","cet6":"下午14:00-16:00：本周单词复盘+听力错题重听","school":"—","tech":"上午：本周知识点梳理，写笔记\n晚上：预习面向对象内容","standard":"能独立讲清Python基础核心知识点；有代码模板"}]},{"label":"第4周","dates":"9.21-9.27","title":"面向对象入门+进阶","goal":"掌握类/继承/多态+模块化","note":"跳步修正：类型注解专题补上","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课上：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 面向对象核心：类、对象、属性、方法\n2. 构造方法、封装","standard":"能写出Student类，包含属性和方法"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课上：背单词","school":"上午：离散数学课\n晚上：Java课（对比理解面向对象）","tech":"下午：\n1. 继承、多态基础\n2. 类方法、静态方法","standard":"能写出子类继承父类的简单案例"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：面向对象进阶：魔法方法\n下午：用面向对象重构学生管理系统\n晚上：代码结构优化分层","standard":"系统用类实现，模块清晰"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课上：作文素材积累","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. 模块与包的导入、pip安装第三方库\n2. 【20分钟Python类型注解专题】int/str/list/dict/Optional + 函数签名类型提示","standard":"能拆分模块；能看懂并写出带类型注解的函数（FastAPI/Pydantic硬前置）"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课上：同步练组件","school":"下午：Web前端技术课「自主学习」\n内容：列表/表格 + Bootstrap导航栏、表格","tech":"晚上：\n1. 落地练习：待办页面加导航+列表表格\n2. 面向对象复盘","standard":"待办静态页面完整；面向对象无盲区"},{"day":"周六","cet6":"上午：六级听力专项（精听+跟读）","school":"—","tech":"下午：学生管理系统最终优化\n晚上：预习数据结构","standard":"代码规范有注释"},{"day":"周日","cet6":"下午：听力错题复盘","school":"—","tech":"上午：面向对象知识点梳理\n晚上：预习下周数据结构","standard":"能讲清面向对象三大特性"}]},{"label":"第5周","dates":"9.28-10.4","title":"国庆假期·数据结构+MySQL入门","goal":"数组/链表/栈/队列/哈希/二分+单表SQL","note":"跳步修正：递归专题先行","is_buffer":false,"days":[{"day":"周一","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：【30分钟递归基础专题】阶乘、斐波那契、目录遍历，讲清调用栈和终止条件\n下午：时间复杂度；数组原理与操作；链表原理+手写单链表","standard":"能手写单链表增删节点；理解递归执行逻辑"},{"day":"周二","cet6":"早上30词；午休后1篇阅读","school":"国庆放假","tech":"上午：栈、队列原理+Python实现\n下午：哈希表原理+字典实现哈希查询","standard":"能独立实现栈和队列的入/出操作"},{"day":"周三","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：二分查找原理+手写实现\n下午：MySQL安装、库/表操作、基本增删改查SQL","standard":"能手写单表增删改查SQL；能手写二分查找"},{"day":"周四","cet6":"早上30词；午休后1篇阅读","school":"国庆放假","tech":"上午：条件查询、排序、分组统计\n下午：内连接查询","standard":"能写出带where/order by/group by的查询SQL"},{"day":"周五","cet6":"早上30词；晚30分钟精听","school":"国庆放假","tech":"上午：pymysql安装+Python连接MySQL\n下午：用pymysql实现学生表增删改查","standard":"运行Python脚本能对数据库做增删改查"},{"day":"周六","cet6":"上午：六级真题模考（阅读+听力）","school":"国庆放假","tech":"下午：事务基础、索引基础概念\n晚上：本周知识点梳理","standard":"能说出事务四大特性；知道索引作用"},{"day":"周日","cet6":"下午：真题复盘+单词补漏","school":"国庆放假","tech":"上午：查漏补缺\n晚上：调整状态","standard":"本周知识点无明显盲区"}]},{"label":"第6周","dates":"10.5-10.11","title":"MySQL进阶+数据库设计","goal":"","note":"缓冲周·只复盘不学新大模块","is_buffer":true,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 慢查询基础、索引优化实战\n2. Python操作数据库事务处理","standard":"能给表加合适索引；代码实现事务控制"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. 多表联查练习\n2. 数据库表设计三大范式","standard":"能写出3表联查SQL；理解三大范式"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：表设计实战：学生/课程/成绩三张表\n下午：用pymysql重构学生管理系统\n晚上：系统测试优化","standard":"系统所有数据走MySQL；表设计合理"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：数据库设计查漏补缺；常见场景积累","standard":"能独立完成简单业务表结构设计"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练弹窗","school":"下午：Web前端技术课「自主学习」\n内容：表单 + Bootstrap模态框","tech":"晚上：\n1. 落地练习：待办页面加新增/编辑弹窗\n2. 数据库本周复盘","standard":"页面支持弹窗交互；数据库无盲区"},{"day":"周六","cet6":"上午：六级翻译专项","school":"—","tech":"下午：待办事项表设计+数据库实现\n晚上：预习FastAPI","standard":"能设计合理的待办表结构"},{"day":"周日","cet6":"下午：翻译复盘+单词回顾","school":"—","tech":"上午：本周知识点梳理\n晚上：预习FastAPI环境搭建","standard":"能讲清表设计思路"}]},{"label":"第7周","dates":"10.12-10.18","title":"FastAPI入门+基础接口开发","goal":"掌握RESTful接口+数据库交互","note":"类型注解已就位","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. FastAPI环境搭建、第一个接口\n2. 路径参数、查询参数","standard":"启动服务能访问/docs接口文档"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. 请求体、Pydantic数据模型（类型注解已学，直接上手）\n2. 响应模型、状态码","standard":"能定义请求响应格式；接口返回规范数据"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：依赖注入、异常处理基础\n下午：FastAPI+pymysql实现待办查询接口\n晚上：Postman安装调试","standard":"能通过接口查询数据库待办数据；Postman测试正常"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：新增、修改、删除接口开发","standard":"待办增删改查接口全部完成"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练样式","school":"下午：Web前端技术课「自主学习」\n内容：CSS选择器、盒模型 + Bootstrap样式工具","tech":"晚上：\n1. 落地练习：优化待办页面样式\n2. 接口联调测试","standard":"页面整洁美观；所有接口测试通过"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：接口优化；统一错误处理\n晚上：整理接口文档","standard":"接口文档清晰；异常返回友好提示"},{"day":"周日","cet6":"下午：真题复盘+核心词背诵","school":"—","tech":"上午：代码整理规范\n晚上：预习SQLAlchemy","standard":"代码结构清晰有注释"}]},{"label":"第8周","dates":"10.19-10.25","title":"SQLAlchemy ORM+待办接口重构","goal":"ORM替代原生SQL，接口分层","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：新词50个\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. ORM核心概念理解\n2. SQLAlchemy安装、连接、模型类定义","standard":"能定义模型类；启动自动生成数据库表"},{"day":"周二","cet6":"① 早课前：复习+新词20个\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：SQLAlchemy单表增删改查（单独脚本练习）","standard":"运行脚本能用ORM完成表增删改查"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：ORM查询进阶：条件、排序、分页\n下午：FastAPI整合SQLAlchemy，封装数据库会话\n晚上：重构待办CRUD接口","standard":"待办接口全部改用ORM实现；功能正常"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：接口全量测试；bug修复","standard":"所有接口测试通过；数据和数据库同步"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练响应式","school":"下午：Web前端技术课「自主学习」\n内容：CSS Flex布局 + Bootstrap响应式","tech":"晚上：\n1. 落地练习：待办页面响应式适配\n2. ORM知识点复盘","standard":"页面不同宽度正常显示；ORM操作熟练"},{"day":"周六","cet6":"上午：六级写作专项","school":"—","tech":"下午：分层架构改造；统一响应格式\n晚上：代码结构优化","standard":"代码按model/schema/controller分层"},{"day":"周日","cet6":"下午：作文素材复盘","school":"—","tech":"上午：本周知识点梳理\n晚上：预习Git+Linux","standard":"能讲清ORM和原生SQL区别"}]},{"label":"第9周","dates":"10.26-11.1","title":"Git+Linux基础+JS核心+前端联调","goal":"Git托管+Linux入门+JS打通前后端","note":"跳步修正：JS顺序重排，先学后联调","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. Git基础：安装、add/commit/status、远程推送拉取\n2. 【JS核心语法】变量、数据类型、函数、数组、对象","standard":"能提交代码到GitHub；能写JS基础函数操作数组"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. Git分支、合并、简单冲突处理\n2. 【DOM操作+事件绑定】元素获取、创建删除、点击事件","standard":"能创建合并分支；能用JS操作页面元素、绑定事件"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Linux基础：文件系统、ls/cd/mkdir/rm/cp/mv/grep/find\n下午：【Fetch+Promise+async/await】接口请求、异步编程\n晚上：前后端联调，实现待办增删改查页面交互","standard":"能在终端操作文件；页面能直接调用后端接口，数据实时同步"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. Linux进阶：权限chmod、进程ps/top/kill、tar压缩解压\n2. 前端交互优化","standard":"能修改文件权限；能查看终止进程；页面交互流畅"},{"day":"周五","cet6":"① 早课前：核心词复盘\n② Web课：同步练事件","school":"下午：Web前端技术课「自主学习」\n内容：JS事件进阶+表单验证","tech":"晚上：\n1. 落地练习：表单验证对接后端\n2. Linux命令复盘","standard":"表单验证前后端一致；常用Linux命令熟练"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：Linux综合实操：待办项目上传服务器，裸机启动运行\n晚上：写README；代码整理上传GitHub","standard":"能在云服务器独立启动后端服务；公网IP+端口能访问"},{"day":"周日","cet6":"下午：真题复盘+错题整理","school":"—","tech":"上午：Git+Linux知识点梳理\n晚上：预习下周项目收尾+Nginx","standard":"能讲清Git工作流；能独立部署Python服务"}]},{"label":"第10周","dates":"11.2-11.8","title":"Linux进阶+Nginx+项目收尾+架构设计","goal":"待办首次公网部署验收","note":"跳步修正：需求分析专题先行于二手平台","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. Linux问题排查：端口占用、进程挂死、权限报错、依赖缺失四类定位\n2. 项目细节优化，修复bug","standard":"能独立排查服务启动失败、端口访问不了两类常见问题"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：\n1. systemd基础：配置服务、开机自启、查看状态\n2. SQL查漏补缺","standard":"能把Python服务配置成systemd后台常驻"},{"day":"周三","cet6":"① 早上：高频词梳理\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Nginx基础：反向代理、端口转发、静态文件服务\n下午：待办项目完整部署：Nginx反代后端+静态页\n晚上：部署踩坑记录，写技术博客","standard":"公网IP能直接访问项目页面和接口；服务稳定"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：\n1. 【1小时需求分析与三层架构专题】用户故事、表设计、controller/service/model分层\n2. FastAPI查漏补缺","standard":"能写出简单的需求清单；理解三层架构划分"},{"day":"周五","cet6":"① 早课前：核心词复盘\n② Web课：同步练封装","school":"下午：Web前端技术课「自主学习」\n内容：Fetch封装+通用工具类","tech":"晚上：\n1. 落地练习：封装通用请求工具类\n2. 前端查漏补缺","standard":"有统一的接口请求工具；前端无明显盲区"},{"day":"周六","cet6":"上午：六级中期总结","school":"—","tech":"下午：二手交易平台需求分析+架构设计\n晚上：技术选型确认","standard":"输出需求文档和表结构设计；符合三层架构"},{"day":"周日","cet6":"下午：休整+单词复盘","school":"—","tech":"上午：第一阶段整体复盘\n晚上：规划第二阶段","standard":"清晰掌握第一阶段所有技术栈"}]}]},{"id":"s2","name":"阶段二：项目实战+六级+Agent入门","time":"第11-16周 · 2026.11.9-12.20","intro":"目标：二手平台Docker容器化部署上线；Agent基础入门（API/Function Call/Prompt/RAG）；六级考试完成\n跳步修正：JWT专题(第11周)、异步+JSON Schema专题(第14周)、Docker前置(第12周)、Nginx+HTTPS(第13周)；六级笔试12.12(第15周周四)、口语11.21-22(第12周)","type":"daily","weeks":[{"label":"第11周","dates":"11.9-11.15","title":"二手平台后端核心开发+JWT认证","goal":"用户/商品/订单三模块接口","note":"跳步修正：JWT专题先行","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【JWT认证授权专题】Session vs JWT、签发校验流程、FastAPI依赖注入实现登录校验\n2. 项目初始化，搭建分层架构","standard":"能实现JWT登录注册；接口能校验token"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：用户模块接口开发（注册、登录、信息修改）","standard":"用户模块所有接口测试通过"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：商品模块接口开发（发布、列表、详情、搜索）\n下午：订单模块接口开发（下单、状态修改、列表）\n晚上：接口联调测试；全局异常处理","standard":"核心业务接口全部开发完成"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：接口权限校验；参数校验完善","standard":"接口健壮；参数异常不崩溃"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练电商布局","school":"下午：Web前端技术课「自主学习」\n内容：电商页面布局+Bootstrap电商组件","tech":"晚上：\n1. 落地练习：首页、商品列表页静态版\n2. 后端bug修复","standard":"核心页面静态版完成；后端接口定型"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：数据库索引优化；分页查询实现\n晚上：接口文档完善","standard":"接口性能达标；文档完整"},{"day":"周日","cet6":"下午：真题复盘+错题整理","school":"—","tech":"上午：后端代码优化\n晚上：预习前端联调+Docker","standard":"后端核心功能稳定"}]},{"label":"第12周","dates":"11.16-11.22","title":"前端联调+Docker基础","goal":"核心流程打通+Docker入门","note":"跳步修正：Docker前置独立学习；11.21-22六级口语考试","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：商品详情页、发布商品页开发","standard":"页面能正常渲染布局"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：登录注册页、个人中心页开发","standard":"核心页面静态版完成"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Fetch封装，对接后端接口\n下午：全流程联调：浏览-发布-下单\n晚上：交互优化；加载状态、错误提示","standard":"核心业务流程前后端打通；数据同步"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：【Docker基础专题】镜像与容器概念、docker run/ps/logs/exec","standard":"能拉取镜像、启动容器、进入容器、查看日志"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练表单验证","school":"下午：Web前端技术课「自主学习」\n内容：JS表单验证+交互逻辑","tech":"晚上：\n1. 落地练习：表单验证对接后端\n2. Docker进阶：Dockerfile编写基础","standard":"表单验证前后端一致；能写简单Dockerfile构建Python镜像"},{"day":"周六","cet6":"① 六级口语考试（11.21）\n② 考前针对性练习30分钟","school":"—","tech":"下午：Docker进阶：docker-compose基础、多容器编排\n晚上：管理员后台页面开发","standard":"能用compose一键启动后端+数据库两个容器"},{"day":"周日","cet6":"① 六级口语考试（11.22，视场次）\n② 下午：作文复盘+单词回顾","school":"—","tech":"上午：Docker知识点梳理\n晚上：预习下周部署上线","standard":"能独立完成Python项目Docker镜像构建与启动"}]},{"label":"第13周","dates":"11.23-11.29","title":"Docker容器化部署+项目定型","goal":"二手平台公网上线+简历项目成型","note":"跳步修正：Nginx+HTTPS专题前置","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【Nginx进阶+HTTPS基础】反向代理配置、静态文件服务、Certbot一键申请证书、域名解析概念\n2. 服务器Docker环境安装","standard":"能配置Nginx反代；理解HTTPS证书作用"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：编写项目Dockerfile；构建后端镜像","standard":"能在本地构建项目镜像并运行"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：编写docker-compose.yml，编排后端+MySQL+前端\n下午：服务器部署：镜像上传、compose启动、Nginx反代、HTTPS配置\n晚上：公网访问测试；压力测试；问题排查","standard":"公网域名能正常访问项目；所有功能容器化运行"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：作文素材","school":"上午：公共课\n下午：思政类课程","tech":"晚上：部署踩坑记录；写技术博客","standard":"输出容器化部署教程博客"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练数据处理","school":"下午：Web前端技术课「自主学习」\n内容：JS数组进阶+数据处理","tech":"晚上：项目细节优化；bug修复","standard":"项目线上版稳定运行"},{"day":"周六","cet6":"上午：六级真题模考","school":"—","tech":"下午：项目最终优化；非核心功能裁剪\n晚上：GitHub仓库完善，加演示链接、架构图、部署说明","standard":"GitHub仓库规范完整；有公网演示链接"},{"day":"周日","cet6":"下午：真题复盘+核心词背诵","school":"—","tech":"上午：项目最终验收\n晚上：Agent基础预习","standard":"项目完全定型可作简历项目；Docker部署能讲清流程"}]},{"label":"第14周","dates":"11.30-12.6","title":"Agent基础入门","goal":"大模型API+Function Call+Prompt","note":"跳步修正：异步/HTTP客户端+JSON Schema专题","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频词复习\n② 电子电路课：泛听听力","school":"上午：电子电路基础课","tech":"下午+晚上：\n1. 【Python异步与HTTP客户端专题】async/await、httpx库、SSE流式读取原理\n2. 【30分钟JSON Schema基础】工具定义格式、type/properties/required\n3. 注册开放平台；大模型API调用Hello World","standard":"能异步调用大模型API；能看懂JSON Schema"},{"day":"周二","cet6":"① 早课前：高频词复习\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：多轮对话上下文管理；流式输出实现","standard":"能实现多轮对话；支持流式打字效果"},{"day":"周三","cet6":"① 早上：30个新词\n② 午休后：1篇仔细阅读","school":"无课，全天自主安排","tech":"上午：Function Call核心原理；工具定义\n下午：手写天气查询、数据库查询两个工具案例\n晚上：带工具调用的对话助手封装","standard":"大模型能自主判断调用工具、传参并返回结果"},{"day":"周四","cet6":"① 早课前：复习单词\n② 思政课：泛听听力","school":"上午：公共课\n下午：思政类课程","tech":"晚上：Prompt工程基础：结构化提示词、角色设定","standard":"能写出规范的角色提示词"},{"day":"周五","cet6":"① 早课前：新词30个\n② Web课：同步练对话界面","school":"下午：Web前端技术课「自主学习」\n内容：对话界面布局+流式效果","tech":"晚上：\n1. 落地练习：简单网页对话Demo\n2. 业务场景Prompt练习","standard":"能针对业务场景写出优化提示词"},{"day":"周六","cet6":"上午：六级翻译专项","school":"—","tech":"下午：整理10套业务场景Prompt模板\n晚上：RAG基础概念学习","standard":"有自己的Prompt模板库"},{"day":"周日","cet6":"下午：翻译复盘+单词回顾","school":"—","tech":"上午：本周Agent知识点梳理\n晚上：预习RAG详细内容","standard":"能讲清Function Call作用和流程"}]},{"label":"第15周","dates":"12.7-12.13","title":"RAG入门+六级冲刺","goal":"跑通基础RAG流程；12.12（周四）六级笔试","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"① 早课前：高频错题词\n② 电子电路课：精听听力","school":"上午：电子电路基础课","tech":"下午+晚上：文档加载解析；文本切片策略","standard":"能加载解析PDF/TXT文档"},{"day":"周二","cet6":"① 早课前：高频词\n② 离散课：背单词","school":"上午：离散数学课\n晚上：Java课","tech":"下午：嵌入模型使用；文本向量化","standard":"能将文本转为向量"},{"day":"周三","cet6":"① 早上：高频词\n② 午休后：1套阅读","school":"无课，全天自主安排","tech":"上午：Chroma向量数据库入门；增删改查\n下午：检索召回+大模型生成，跑通完整RAG流程\n晚上：封装RAG通用模块","standard":"本地能跑通「文档上传→检索→回答」完整流程"},{"day":"周四","cet6":"【12.12 六级笔试日】上午考试，下午休整","school":"上午：参加六级考试","tech":"晚上：休整放松，不安排技术任务","standard":"六级考试完成"},{"day":"周五","cet6":"① 早课前：高频词\n② 六级考后复盘","school":"下午：Web前端技术课「自主学习」\n内容：DOM进阶+动态渲染","tech":"晚上：\n1. 落地练习：RAG对话页面雏形\n2. RAG知识点复盘","standard":"有简单的RAG问答Demo"},{"day":"周六","cet6":"上午：休整","school":"—","tech":"下午：RAG前端对话页优化\n晚上：本周知识点复盘","standard":"对话界面基本可用"},{"day":"周日","cet6":"下午：休整","school":"—","tech":"上午：查漏补缺\n晚上：调整状态，准备期末复习","standard":"RAG基础掌握；六级状态良好"}]},{"label":"第16周","dates":"12.14-12.20","title":"六级收官+LangGraph入门+期末复习启动","goal":"轻量LangGraph概念+期末复习节奏","note":"","is_buffer":false,"days":[{"day":"周一","cet6":"六级考后休整，不再背词","school":"各门课程正常上课","tech":"晚上：LangGraph基础概念学习：状态、节点、边核心组成","standard":"了解LangGraph核心组成，不写重代码"},{"day":"周二","cet6":"—","school":"上午：离散数学课\n晚上：Java课","tech":"下午+晚上：30分钟LangGraph：状态更新与节点执行顺序","standard":"能说出节点如何按顺序执行"},{"day":"周三","cet6":"—","school":"无课，全天自主安排","tech":"上午：期末复习启动（离散数学）\n下午：期末复习（电子电路）\n晚上：30分钟LangGraph条件分支预习","standard":"期末复习进入节奏；LangGraph认知建立"},{"day":"周四","cet6":"—","school":"上午：公共课\n下午：思政类课程","tech":"晚上：期末复习（思政/课程论文）","standard":"期末复习稳步推进"},{"day":"周五","cet6":"—","school":"下午：Web前端技术课（正常上课）","tech":"晚上：期末复习（Java/电子电路）","standard":"期末复习稳步推进"},{"day":"周六","cet6":"—","school":"—","tech":"全天：期末复习（重点科目）","standard":"期末复习进度过半"},{"day":"周日","cet6":"—","school":"—","tech":"上午：期末复习\n晚上：规划下周考试安排","standard":"对期末考试有全局安排"}]}]},{"id":"s3","name":"第17-19周：期末考试 + Web实训","time":"2026.12.21-2027.1.10","intro":"期末考集中在第17-18周；Web前端集中实训在第19周。期末周技术降级为轻量保持，实训周白天跟学校、晚上做自己的项目。","type":"block","blocks":[{"label":"第17周","dates":"12.21-12.27","title":"","theme":"期末考试周","time":"期末考试周","core":"全力复习期末考试，保证不挂科\n每天抽20分钟：看Agent技术文章，保持认知，不写重代码","output":"期末考试成绩稳定"},{"label":"第18周","dates":"12.28-1.3","title":"","theme":"期末考试周","time":"期末考试周","core":"期末考试（跨年）\n每天抽15分钟：梳理寒假项目架构","output":"期末考试全部完成"},{"label":"第19周","dates":"1.4-1.10","title":"Web前端集中实训周","theme":"Web实训周","time":"Web实训周","core":"白天：跟着学校实训完成实训作业，直接把实训成果复用到三个项目的前端优化，统一设计风格，打磨成面试演示版本\n晚上：知识库Agent基础框架搭建 + 基础RAG流程跑通（深度优化留到寒假）","output":"实训作业完成 + 知识库Agent框架雏形"}]},{"id":"s4","name":"阶段三：Agent核心攻坚","time":"寒假第1-6周 · 2027.1.11起约6周","intro":"寒假时间充裕（每天可投入5-6小时）。核心原则：优先1个高质量带评估数据的知识库Agent；LangGraph专项5天打牢基础再进多智能体；每项目带可验证量化指标。","type":"block","blocks":[{"label":"寒假第1周","dates":"1.11起","title":"","theme":"大模型基础巩固","time":"大模型基础巩固","core":"大模型API进阶+Function Call进阶+Prompt工程进阶\n每天：3道算法题保持手感","output":"Function Call熟练+Prompt模板库扩充"},{"label":"寒假第2周","dates":"","title":"","theme":"RAG深度进阶","time":"RAG深度进阶","core":"混合检索策略、重排序Rerank、上下文压缩、引用溯源\n【RAGAS评估】构建20-50条问答测试集，记录Top-1召回率和答案准确率\n每天：3道算法题","output":"RAG深度优化完成+评估数据产出"},{"label":"寒假第3周","dates":"","title":"","theme":"知识库Agent开发","time":"知识库Agent开发","core":"后端：文档上传、向量存储、对话生成API\n前端：Vue对话页+文档管理页（或用原生+模板快速拼），流式输出\n每天：2道算法题","output":"知识库Agent前后端完成"},{"label":"寒假第4周","dates":"","title":"","theme":"知识库Agent部署","time":"知识库Agent部署","core":"Docker打包部署，上线公网\n编写README+演示视频\n整理评估数据（测试方法+测试集说明）\n每天：2道算法题","output":"第一个高质量Agent项目上线（含真实评估数据）"},{"label":"寒假第5周","dates":"","title":"","theme":"LangGraph专项5天+多智能体启动","time":"LangGraph专项5天+多智能体启动","core":"【LangGraph专项（新增，打牢基础）】\nDay1：StateGraph、节点、边、编译运行\nDay2：条件边、循环、状态更新\nDay3：Checkpoint、持久化、Human-in-the-loop\nDay4：多智能体模式（Supervisor/Swarm）\nDay5：用LangGraph重写一个简单单Agent\n随后启动电商客服多智能体开发","output":"LangGraph系统掌握+多智能体项目启动"},{"label":"寒假第6周","dates":"","title":"","theme":"多智能体项目+收尾","time":"多智能体项目+收尾","core":"开发电商客服多智能体（接待/订单查询/工单生成三角色）\n记忆和转人工逻辑；前端后台\n【评估】20-30轮模拟对话测试：意图识别准确率、自动解决率、转人工率\n部署上线+寒假复盘","output":"第二个Agent项目完成（带量化指标）+寒假复盘"}]},{"id":"s5","name":"阶段四：求职冲刺+暑假实习","time":"大二下学期 · 2027.3-8月","intro":"投递优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习。先把「有实习」落地，再追求含金量；11月即可启动投递练手。","type":"block","blocks":[{"label":"开学第1-2周","dates":"","title":"","theme":"简历+八股启动","time":"简历+八股启动","core":"用CodeCV写简历，突出两个Agent项目\n每个项目写「背景-选型-难点-方案-优化」逐字稿\n八股：Python后端专项+LLM-Interview\n【启动日常实习投递】目标：中小公司Python后端/全栈","output":"简历成型+开始投递"},{"label":"开学第3-8周","dates":"","title":"","theme":"批量投递+面试实战","time":"批量投递+面试实战","core":"每天投递10-15家：BOSS直聘、实习僧、牛客网、内推\n每天：1小时八股+1小时算法（简单+中等）\n记录每次面试问题，当天复盘补漏\n项目持续迭代（面试中暴露的问题优先修）","output":"面试能力提升+拿到面试机会"},{"label":"开学第9-12周","dates":"","title":"","theme":"offer选择+入职准备","time":"offer选择+入职准备","core":"边面边优化，日常实习全年滚动\n拿到offer后准备入职（技术栈补漏）\n暑期实习若有窗口继续投（大二不符合正式暑期实习对象，能投则投）","output":"2027年暑假实习敲定（中小公司/远程）"}]}],"resources":[{"category":"Python基础","name":"B站黑马程序员Python教程（只看基础+面向对象部分）","desc":"入门快，对应第3-4周"},{"category":"Python基础","name":"Python官方文档（Tutorial）","desc":"遇到不懂查官方，建立准确概念"},{"category":"数据结构","name":"B站王卓《数据结构》（只看数组/链表/栈/队列/哈希/二分）","desc":"2倍速，配合Python手写实现"},{"category":"数据结构","name":"LeetCode热题100（筛简单题）","desc":"第5周起步，每周3-5道，不深入DP/图论"},{"category":"数据库","name":"尚硅谷MySQL高级（索引/事务/慢查询）","desc":"第6周配合复习，面试重点"},{"category":"后端框架","name":"FastAPI官方中文文档（必看）","desc":"第7周项目驱动学习"},{"category":"后端框架","name":"SQLAlchemy官方文档/掘金《FastAPI+SQLAlchemy整合指南》","desc":"第8周ORM核心"},{"category":"Linux","name":"B站韩顺平Linux入门（文件/权限/进程/SSH/包管理）","desc":"第9-10周，够用线即可"},{"category":"Linux","name":"《鸟哥的Linux私房菜》（基础篇，按需查）","desc":"部署排查时查命令用"},{"category":"Docker","name":"B站狂神说Docker（基础到部署）","desc":"第12-13周，容器化部署核心"},{"category":"前端","name":"MDN Web Docs（HTML/CSS/JS）","desc":"Web课自学的权威来源"},{"category":"前端","name":"Bootstrap5官方中文文档","desc":"快速拼页面，不卷前端深度"},{"category":"大模型","name":"智谱AI/通义千问开放平台文档","desc":"第14周API调用实战"},{"category":"大模型","name":"吴恩达《Prompt Engineering》中文版","desc":"Prompt系统学习"},{"category":"RAG","name":"B站同济子豪兄《RAG从入门到实战》","desc":"第15周+寒假第2周，跑通全流程"},{"category":"RAG","name":"RAGAS官方文档","desc":"寒假第2周，量化评估知识库Agent"},{"category":"LangGraph","name":"LangGraph中文官网教程+官方GitHub examples","desc":"寒假第5周专项，带可运行代码"},{"category":"LangGraph","name":"Datawhale《Hello-Agents》","desc":"多智能体系统教程"},{"category":"AI编程工具","name":"Cursor / Claude Code 官方文档","desc":"2026年招聘常见要求，尽早用起来"},{"category":"八股面试","name":"Python后端面试专项题库（GitHub搜「Python-Interview」）","desc":"覆盖装饰器/生成器/GIL/异步/FastAPI/SQLAlchemy"},{"category":"八股面试","name":"GitHub「LLM-Interview」（Agent方向主八股）","desc":"汇总RAG、Agent、大模型应用面试题——主要来源"},{"category":"八股面试","name":"LeetCode热题100、牛客网剑指Offer","desc":"中小厂实习算法要求低，优先高频题"},{"category":"投递渠道","name":"BOSS直聘、实习僧","desc":"中小公司最多，日常实习全年滚动投递"},{"category":"投递渠道","name":"脉脉、小红书搜索「Python实习内推」「Agent实习内推」","desc":"找从业者内推，通过率更高"}]}</script>
+<!-- ===== Embedded task data (逐字来自 task_data.json) ===== -->
+<script type="application/json" id="taskDataJson">{"meta":{"title":"全阶段每日学习打卡表（轻量化细化版）","positioning":"定位：民办本科大二（2026.9.13=大二上第2周周日）| 目标：2027年暑假（大二结束）拿中小公司/远程「暑假里的实习」，2028年大三暑假冲正式暑期实习 | 技术路线：Python后端→RAG/LangGraph Agent | 校历：期末考第17-18周，Web实训第19周，六级笔试12.12（第15周周四）","planStart":"2026-09-14","startWeek":3,"version":"轻量化细化版v3"},"overview":{"stages":[{"name":"阶段一 基础夯实\n第3-10周","time":"2026.9.14-11.8","tasks":"Python基础→面向对象→数据结构精简→MySQL→FastAPI→ORM→Git→Linux→JS→Nginx\n待办事项全栈项目完成首次公网部署","output":"待办项目（公网可访问）+ GitHub仓库 + Linux部署能力"},{"name":"阶段二 项目实战+六级\n第11-16周","time":"2026.11.9-12.20","tasks":"二手平台后端+前端联调+Docker容器化部署上线\nAgent基础（API/Function Call/Prompt/RAG入门）\n六级笔试12.12（口语战略放弃）+11月起每日投递","output":"二手平台（Docker公网上线）+ 大模型调用能力 + 六级成绩 + 投递反馈"},{"name":"第17-18周 期末考试","time":"2026.12.21-2027.1.3","tasks":"全力复习期末，保证不挂科；隔天15分钟保持技术认知（压力大可跳过，不写代码）","output":"期末考试成绩稳定"},{"name":"第19周 Web实训","time":"2027.1.4-1.10","tasks":"白天学校实训+成果复用项目前端；晚上只做知识库Agent文档加载+切片（深度开发留寒假）","output":"实训作业 + PDF加载切片验收（打印切片数量与前3个切片）"},{"name":"阶段三 Agent攻坚\n寒假第1-6周","time":"2027.1.11起约6周","tasks":"RAG深度进阶+RAGAS评估→知识库Agent上线（含评估数据）→LangGraph专项5天→电商客服多智能体","output":"1个高质量Agent项目（带RAGAS评估数据）+ 1个Demo级（截图+主观测试记录）"},{"name":"阶段四 求职冲刺\n大二下学期","time":"2027.3-8月","tasks":"简历打磨+八股背诵+批量投递面试；暑假入职中小公司/远程日常实习","output":"一段真实实习 + 简历 + 为2028暑期实习铺路"}],"adjustments":[{"tag":"校历对齐","text":"当前=大二上第2周周日，下周进入第3周；第17-18周期末考试、第19周Web实训全部落实；六级笔试12.12(第15周周四)、口语11.21-22(第12周)"},{"tag":"跳步修正1","text":"第3周砍掉正则（移到阶段二），优先保证文件读写+异常处理；HTML提前到周二晚30分钟预览"},{"tag":"跳步修正2","text":"第5周插入30分钟递归基础专题（阶乘/斐波那契/目录遍历），再进入数据结构"},{"tag":"跳步修正3","text":"第4周周四加20分钟Python类型注解专题（FastAPI/Pydantic硬前置）"},{"tag":"跳步修正4","text":"第9周JS顺序重排：周一JS核心、周二DOM+事件、周三Fetch+Promise+async再联调（不再先联调后学）"},{"tag":"跳步修正5","text":"第10周周四加1小时需求分析与三层架构专题（用户故事/表设计/分层），再启动二手平台"},{"tag":"跳步修正6","text":"第11周周一加JWT认证授权专题（Session vs JWT/签发校验/依赖注入）"},{"tag":"跳步修正7","text":"Linux独立成模块（第9-10周）：文件/权限/进程/SSH/包管理→问题排查/systemd/Nginx；验收=能独立部署排查Python服务"},{"tag":"跳步修正8","text":"第14周拆分轻量节奏：周一async/httpx、周三JSON Schema+Function Call、周四SSE+流式输出（不再一天塞三个新概念）"},{"tag":"跳步修正9","text":"第14周加30分钟JSON Schema基础（Function Call硬前置）"},{"tag":"跳步修正10","text":"Docker前置独立学习（第12周）→第13周容器化部署上线；寒假不再第一次接触Docker"},{"tag":"跳步修正11","text":"寒假第5周前安排5天LangGraph专项（StateGraph/条件边/Checkpoint/多智能体/重写单Agent），再进入多智能体项目"},{"tag":"跳步修正12","text":"第19周只做知识库Agent基础框架+基础RAG，深度优化放寒假第2周（顺序修正）"},{"tag":"投递策略","text":"11月启动日常实习投递练手（全年滚动），优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习"},{"tag":"量化评估","text":"知识库Agent用20-50条问答测试集+RAGAS；客服智能体用20-30轮模拟对话测试，注明测试方法"},{"tag":"资源替换","text":"删JavaGuide主八股，换Python后端面试专项+LLM-Interview；新增AI编程工具（Cursor/Claude Code）要求"},{"tag":"六级策略","text":"四级464起点：每天碎片时间背词+听力精听必做；考前4周每周2套真题；口语11月、笔试12.12；过线概率约五到六成，不喧宾夺主"},{"tag":"轻量化7原则（本版核心）","text":"①每日技术3-4小时封顶，周日全天休息+下午复盘补漏（缓冲日不排新任务）②项目分级：知识库Agent=核心做深，待办/二手=跑通即可，客服多智能体=Demo级 ③投递提前：11月起工作日每日投递10-15家，面试反馈驱动学习 ④算法分周进阶：第3-4周简单题+语法练习→第5-6周Hot100简单题→第7周起中等优先，每天1-2道 ⑤六级保过线：每天30-40分钟，战略放弃口语只保笔试 ⑥技术抓核心放边缘：Nginx/JS/HTTPS/systemd了解即可 ⑦每两周30分钟深度复盘（节点：第5/7/9/11/13/15周周日），每周日轻量复盘，动态调整不死守表格"},{"tag":"已移除","text":"蓝桥杯备赛计划不再纳入本表（若日后想参加，参考对话中资料即可，不与主线抢时间）"}]},"stages":[{"id":"s1","name":"阶段一：基础夯实·轻量化","time":"第3-10周 · 2026.9.14-11.8","intro":"轻量化原则：每日技术3-4小时封顶；算法分周进阶——第3-4周简单题+语法练习→第5-6周Hot100简单题→第7周起中等优先；周日全天休息+复盘补漏（缓冲日）；砍掉边缘进阶知识点\n项目分级：待办项目=快速跑通全栈入门，不追求完美；Linux/Nginx/JS只学核心够用\n跳步修正保留：正则后移、递归专题(第5周)、类型注解专题(第4周)、JS顺序重排(第9周)、需求分析专题(第10周)","type":"daily","weeks":[{"label":"第3周","dates":"9.14-9.20","title":"Python核心语法筑基","goal":"掌握基础语法+函数+常用数据结构","note":"跳步修正：砍掉正则，HTML提前预览","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）（四级464起点，词汇优先）"},{"type":"task","text":"电子电路课上：泛听六级听力磨耳朵"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课（保证出勤）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"基础：变量、数据类型、输入输出"},{"type":"task","text":"分支结构、循环结构+配套练习"},{"type":"task","text":"函数定义、参数、返回值"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"不查资料能独立写出10个不同功能的自定义函数"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习昨日单词+新词20个"},{"type":"task","text":"离散课上：背单词碎片记忆"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java程序设计课（对应理解Python）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"列表、元组常用操作+练习"},{"type":"task","text":"字典、集合常用操作+练习"},{"type":"task","text":"【30分钟HTML入门预览】常用标签认知"},{"type":"task","text":"课后：对比Java与Python基础语法"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能用列表+字典实现简易学生名单增删改查；认识常用HTML标签"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：精听1篇六级听力（听两遍，对照原文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：字符串高级操作（正则砍掉，移到阶段二）"},{"type":"task","text":"下午：文件读写、异常捕获与处理"},{"type":"task","text":"晚上：命令行学生管理系统v1（数据存txt）"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"程序能完整运行，支持增删改查，数据持久化到文件，异常输入不崩溃"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习本周单词"},{"type":"task","text":"思政/选修课上：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程（出勤即可）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"内置常用模块（os/datetime/random）"},{"type":"task","text":"代码规范、命名规范"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能熟练导入常用模块，完成文件批量重命名小脚本"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课上：同步练组件"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：HTML核心常用标签 + Bootstrap5入门（栅格、表单、卡片）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：用Bootstrap拼待办事项静态页面框架"},{"type":"task","text":"Python本周知识点复盘"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能快速拼出整洁的表单+列表页面；Python本周无盲区"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午9:00-10:30：六级阅读专项（重点练长难句定位）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：学生管理系统优化，增加异常处理"},{"type":"task","text":"晚上：Python基础查漏补缺"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"程序健壮，异常输入不崩溃"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第4周","dates":"9.21-9.27","title":"面向对象入门+进阶","goal":"掌握类/继承/多态+模块化","note":"跳步修正：类型注解专题补上","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"电子电路课上：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"面向对象核心：类、对象、属性、方法"},{"type":"task","text":"构造方法、封装"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能写出Student类，包含属性和方法"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习+新词20个"},{"type":"task","text":"离散课上：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课（对比理解面向对象）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"继承、多态基础"},{"type":"task","text":"类方法、静态方法"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能写出子类继承父类的简单案例"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：面向对象进阶：魔法方法"},{"type":"task","text":"下午：用面向对象重构学生管理系统"},{"type":"task","text":"晚上：代码结构优化分层"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"系统用类实现，模块清晰"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课上：作文素材积累"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"模块与包的导入、pip安装第三方库"},{"type":"task","text":"【20分钟Python类型注解专题】int/str/list/dict/Optional + 函数签名类型提示"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能拆分模块；能看懂并写出带类型注解的函数（FastAPI/Pydantic硬前置）"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课上：同步练组件"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：列表/表格 + Bootstrap导航栏、表格"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：待办页面加导航+列表表格"},{"type":"task","text":"面向对象复盘"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"待办静态页面完整；面向对象无盲区"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级听力专项（精听+跟读）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode简单题1道（如两数之和暴力解、删除有序数组重复项）+ Python基础语法小练习（30-40分钟，先建立信心，不碰难题）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：学生管理系统最终优化"},{"type":"task","text":"晚上：预习数据结构"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"代码规范有注释"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第5周","dates":"9.28-10.4","title":"国庆假期·数据结构+MySQL入门","goal":"数组/链表/栈/队列/哈希/二分+单表SQL","note":"跳步修正：递归专题先行","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上30词；晚30分钟精听"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：【30分钟递归基础专题】阶乘、斐波那契、目录遍历，讲清调用栈和终止条件"},{"type":"task","text":"下午：时间复杂度；数组原理与操作；链表原理+手写单链表"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能手写单链表增删节点；理解递归执行逻辑"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上30词；午休后1篇阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：栈、队列原理+Python实现"},{"type":"task","text":"下午：哈希表原理+字典实现哈希查询"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能独立实现栈和队列的入/出操作"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上30词；晚30分钟精听"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：二分查找原理+手写实现"},{"type":"task","text":"下午：MySQL安装、库/表操作、基本增删改查SQL"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能手写单表增删改查SQL；能手写二分查找"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上30词；午休后1篇阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：条件查询、排序、分组统计"},{"type":"task","text":"下午：内连接查询"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能写出带where/order by/group by的查询SQL"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上30词；晚30分钟精听"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：pymysql安装+Python连接MySQL"},{"type":"task","text":"下午：用pymysql实现学生表增删改查"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"运行Python脚本能对数据库做增删改查"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级真题模考（只做阅读+听力，不写作文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：事务基础、索引基础概念"},{"type":"task","text":"晚上：本周知识点梳理"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能说出事务四大特性；知道索引作用"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"国庆放假"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第6周","dates":"10.5-10.11","title":"MySQL进阶+数据库设计（国庆后节奏恢复周，本周集中攻数据库）","goal":"","note":"","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"慢查询基础、索引优化实战"},{"type":"task","text":"Python操作数据库事务处理"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能给表加合适索引；代码实现事务控制"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习+新词20个"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"多表联查练习"},{"type":"task","text":"数据库表设计三大范式"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能写出3表联查SQL；理解三大范式"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：表设计实战：学生/课程/成绩三张表"},{"type":"task","text":"下午：用pymysql重构学生管理系统"},{"type":"task","text":"晚上：系统测试优化"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"系统所有数据走MySQL；表设计合理"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：数据库设计查漏补缺；常见场景积累"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能独立完成简单业务表结构设计"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练弹窗"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：表单 + Bootstrap模态框"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：待办页面加新增/编辑弹窗"},{"type":"task","text":"数据库本周复盘"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"页面支持弹窗交互；数据库无盲区"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级翻译专项"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100简单题1道（数组/链表/栈/队列专题）+ 1道巩固题（30-40分钟）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：待办事项表设计+数据库实现"},{"type":"task","text":"晚上：预习FastAPI"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能设计合理的待办表结构"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第7周","dates":"10.12-10.18","title":"FastAPI入门+基础接口开发","goal":"掌握RESTful接口+数据库交互","note":"类型注解已就位","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"FastAPI环境搭建、第一个接口"},{"type":"task","text":"路径参数、查询参数"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"启动服务能访问/docs接口文档"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习+新词20个"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"请求体、Pydantic数据模型（类型注解已学，直接上手）"},{"type":"task","text":"响应模型、状态码"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能定义请求响应格式；接口返回规范数据"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：依赖注入、异常处理基础"},{"type":"task","text":"下午：FastAPI+pymysql实现待办查询接口"},{"type":"task","text":"晚上：Postman安装调试"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能通过接口查询数据库待办数据；Postman测试正常"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：作文素材"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：新增、修改、删除接口开发"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"待办增删改查接口全部完成"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练样式"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：CSS选择器、盒模型 + Bootstrap样式工具"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：优化待办页面样式"},{"type":"task","text":"接口联调测试"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"页面整洁美观；所有接口测试通过"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级真题模考（只做阅读+听力，不写作文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：接口优化；统一错误处理"},{"type":"task","text":"晚上：整理接口文档"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"接口文档清晰；异常返回友好提示"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第8周","dates":"10.19-10.25","title":"SQLAlchemy ORM+待办接口重构","goal":"ORM替代原生SQL，接口分层","note":"","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"ORM核心概念理解"},{"type":"task","text":"SQLAlchemy安装、连接、模型类定义"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能定义模型类；启动自动生成数据库表"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习+新词20个"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：SQLAlchemy单表增删改查（单独脚本练习）"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"运行脚本能用ORM完成表增删改查"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：ORM查询进阶：条件、排序、分页"},{"type":"task","text":"下午：FastAPI整合SQLAlchemy，封装数据库会话"},{"type":"task","text":"晚上：重构待办CRUD接口"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"待办接口全部改用ORM实现；功能正常"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：接口全量测试；bug修复"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"所有接口测试通过；数据和数据库同步"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练响应式"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：CSS Flex布局 + Bootstrap响应式"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：待办页面响应式适配"},{"type":"task","text":"ORM知识点复盘"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"页面不同宽度正常显示；ORM操作熟练"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级写作专项"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：分层架构改造；统一响应格式"},{"type":"task","text":"晚上：代码结构优化"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"代码按model/schema/controller分层"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第9周","dates":"10.26-11.1","title":"Git+Linux基础+JS核心+前端联调","goal":"Git托管+Linux入门+JS打通前后端","note":"跳步修正：JS顺序重排，先学后联调","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"Git基础：安装、add/commit/status、远程推送拉取"},{"type":"task","text":"【JS核心语法】变量、数据类型、函数、数组、对象"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能提交代码到GitHub；能写JS基础函数操作数组"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"Git分支、合并、简单冲突处理"},{"type":"task","text":"【DOM操作+事件绑定】元素获取、创建删除、点击事件"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能创建合并分支；能用JS操作页面元素、绑定事件"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：Linux基础：文件系统、ls/cd/mkdir/rm/cp/mv/grep/find"},{"type":"task","text":"下午：【Fetch+Promise+async/await】接口请求、异步编程"},{"type":"task","text":"晚上：前后端联调，实现待办增删改查页面交互"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能在终端操作文件；页面能直接调用后端接口，数据实时同步"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：作文素材"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"Linux进阶：权限chmod、进程ps/top/kill、tar压缩解压"},{"type":"task","text":"前端交互优化"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能修改文件权限；能查看终止进程；页面交互流畅"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：核心词复盘"},{"type":"task","text":"Web课：同步练事件"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：JS事件进阶+表单验证"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：表单验证对接后端"},{"type":"task","text":"Linux命令复盘"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"表单验证前后端一致；常用Linux命令熟练"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级真题模考（只做阅读+听力，不写作文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：Linux综合实操：待办项目上传服务器，裸机启动运行"},{"type":"task","text":"晚上：写README；代码整理上传GitHub"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能在云服务器独立启动后端服务；公网IP+端口能访问"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第10周","dates":"11.2-11.8","title":"Linux进阶+Nginx+项目收尾+架构设计","goal":"待办首次公网部署验收","note":"跳步修正：需求分析专题先行于二手平台","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"Linux问题排查：端口占用、进程挂死、权限报错、依赖缺失四类定位"},{"type":"task","text":"项目细节优化，修复bug"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能独立排查服务启动失败、端口访问不了两类常见问题"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"systemd基础：配置服务、开机自启、查看状态"},{"type":"task","text":"SQL查漏补缺"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能把Python服务配置成systemd后台常驻"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：高频词梳理"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：Nginx基础：反向代理、端口转发、静态文件服务"},{"type":"task","text":"下午：待办项目完整部署：Nginx反代后端+静态页"},{"type":"task","text":"晚上：部署踩坑记录，写技术博客"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"公网IP能直接访问项目页面和接口；服务稳定"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"【1小时需求分析与三层架构专题】用户故事、表设计、controller/service/model分层"},{"type":"task","text":"FastAPI查漏补缺"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能写出简单的需求清单；理解三层架构划分"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：核心词复盘"},{"type":"task","text":"Web课：同步练封装"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：Fetch封装+通用工具类"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：封装通用请求工具类"},{"type":"task","text":"前端查漏补缺"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"有统一的接口请求工具；前端无明显盲区"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级中期总结"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：二手交易平台需求分析+架构设计"},{"type":"task","text":"晚上：技术选型确认"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"输出需求文档和表结构设计；符合三层架构"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]}]},{"id":"s2","name":"阶段二：项目实战+六级+投递启动·轻量化","time":"第11-16周 · 2026.11.9-12.20","intro":"轻量化原则：每日技术3-4小时封顶；周日起床即休+复盘补漏；算法分周进阶——第3-4周简单题+语法练习→第5-6周Hot100简单题→第7周起中等优先；六级战略放弃口语只保笔试（早课前30新词+复习昨日30个，Anki/墨墨自动安排）\n项目分级：二手平台=能跑通能讲清即可，不堆功能；11月起工作日每日投递日常实习10-15家（以战养战，面试反馈驱动学习重点）；第14-16周已拆成轻量节奏，12.12考试前后不排重技术；阶段四含「未拿到offer」预案\n跳步修正保留：JWT专题(第11周)、异步(第14周周一)+JSON Schema(第14周周三)+SSE(第14周周四)拆分、Docker前置(第12周)、Nginx+HTTPS了解(第13周)；六级笔试12.12","type":"daily","weeks":[{"label":"第11周","dates":"11.9-11.15","title":"二手平台后端核心开发+JWT认证","goal":"用户/商品/订单三模块接口","note":"跳步修正：JWT专题先行","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"【JWT认证授权专题】Session vs JWT、签发校验流程、FastAPI依赖注入实现登录校验"},{"type":"task","text":"项目初始化，搭建分层架构"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能实现JWT登录注册；接口能校验token"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：用户模块接口开发（注册、登录、信息修改）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"用户模块所有接口测试通过"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：商品模块接口开发（发布、列表、详情、搜索）"},{"type":"task","text":"下午：订单模块接口开发（下单、状态修改、列表）"},{"type":"task","text":"晚上：接口联调测试；全局异常处理"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"核心业务接口全部开发完成"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：作文素材"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：接口权限校验；参数校验完善"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"接口健壮；参数异常不崩溃"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练电商布局"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：电商页面布局+Bootstrap电商组件"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：首页、商品列表页静态版"},{"type":"task","text":"后端bug修复"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"核心页面静态版完成；后端接口定型"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级真题模考（只做阅读+听力，不写作文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：数据库索引优化；分页查询实现"},{"type":"task","text":"晚上：接口文档完善"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"接口性能达标；文档完整"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第12周","dates":"11.16-11.22","title":"前端联调+Docker基础","goal":"核心流程打通+Docker入门","note":"跳步修正：Docker前置独立学习；11.21-22六级口语考试","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午+晚上：商品详情页、发布商品页开发"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"页面能正常渲染布局"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：登录注册页、个人中心页开发"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"核心页面静态版完成"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：Fetch封装，对接后端接口"},{"type":"task","text":"下午：全流程联调：浏览-发布-下单"},{"type":"task","text":"晚上：交互优化；加载状态、错误提示"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"核心业务流程前后端打通；数据同步"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：【Docker基础专题】镜像与容器概念、docker run/ps/logs/exec"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能拉取镜像、启动容器、进入容器、查看日志"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练表单验证"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：JS表单验证+交互逻辑"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"落地练习：表单验证对接后端"},{"type":"task","text":"Docker进阶：Dockerfile编写基础"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"表单验证前后端一致；能写简单Dockerfile构建Python镜像"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"六级口语考试（11.21）如已报名：按场次参加，不额外备考"},{"type":"task","text":"未报名：忽略，正常练听力30分钟"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：Docker进阶：docker-compose基础、多容器编排"},{"type":"task","text":"晚上：管理员后台页面开发"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"能用compose一键启动后端+数据库两个容器"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第13周","dates":"11.23-11.29","title":"Docker容器化部署+项目定型","goal":"二手平台公网上线+简历项目成型","note":"跳步修正：Nginx+HTTPS专题前置","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"【Nginx进阶+HTTPS基础】反向代理配置、静态文件服务、Certbot一键申请证书、域名解析概念"},{"type":"task","text":"服务器Docker环境安装"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能配置Nginx反代；理解HTTPS证书作用"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：编写项目Dockerfile；构建后端镜像"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能在本地构建项目镜像并运行"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：编写docker-compose.yml，编排后端+MySQL+前端"},{"type":"task","text":"下午：服务器部署：镜像上传、compose启动、Nginx反代、HTTPS配置"},{"type":"task","text":"晚上：公网访问测试；压力测试；问题排查"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"公网域名能正常访问项目；所有功能容器化运行"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：作文素材"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：部署踩坑记录；写技术博客"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"输出容器化部署教程博客"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练数据处理"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：JS数组进阶+数据处理"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：项目细节优化；bug修复"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"项目线上版稳定运行"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级真题模考（只做阅读+听力，不写作文）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：项目最终优化；非核心功能裁剪"},{"type":"task","text":"晚上：GitHub仓库完善，加演示链接、架构图、部署说明"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"GitHub仓库规范完整；有公网演示链接"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第14周","dates":"11.30-12.6","title":"Agent基础入门","goal":"大模型API+Function Call+Prompt","note":"跳步修正：异步/HTTP客户端+JSON Schema专题","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"电子电路课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午+晚上"},{"type":"task","text":"【Python异步与HTTP客户端专题】async/await基本语法"},{"type":"task","text":"httpx库发GET/POST请求（先不碰SSE，也不碰大模型）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能写异步代码，用httpx发出GET/POST请求"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词复习"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"下午"},{"type":"task","text":"注册智谱/通义开放平台，拿API Key"},{"type":"task","text":"大模型API Hello World跑通"},{"type":"task","text":"多轮对话上下文管理实现"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能本地跑通大模型多轮对话，支持上下文"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：30个新词"},{"type":"task","text":"午休后：1篇仔细阅读"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"上午"},{"type":"task","text":"【JSON Schema基础30分钟】工具定义格式、type/properties/required"},{"type":"task","text":"Function Call核心原理"},{"type":"task","text":"下午：手写天气查询、数据库查询两个工具案例"},{"type":"task","text":"晚上：带工具调用的对话助手封装"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"大模型能自主判断调用工具、传参并返回结果"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：复习单词"},{"type":"task","text":"思政课：泛听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"【SSE流式原理】服务端事件流是什么、如何用httpx流式读取"},{"type":"task","text":"流式输出实现（打字机效果）"},{"type":"task","text":"Prompt工程基础：结构化提示词、角色设定"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"理解SSE原理，能实现流式打字效果；能写出规范的角色提示词"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：新词30个 + 复习昨日30个（Anki/墨墨自动安排）"},{"type":"task","text":"Web课：同步练对话界面"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：对话界面布局+流式效果"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"head","text":"晚上"},{"type":"task","text":"Prompt进阶：业务场景优化技巧"},{"type":"task","text":"落地练习：简单网页对话Demo"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能针对业务场景写出优化提示词；有可看的对话Demo"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：六级翻译专项"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：整理10套业务场景Prompt模板"},{"type":"task","text":"晚上：RAG基础概念学习"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"有自己的Prompt模板库"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第15周","dates":"12.7-12.13","title":"RAG入门+六级冲刺","goal":"跑通基础RAG流程；12.12（周四）六级笔试","note":"","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频错题词"},{"type":"task","text":"电子电路课：精听听力"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：电子电路基础课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午+晚上：RAG第一步——文档加载解析（PDF/TXT/Markdown）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能加载解析常见格式文档"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词"},{"type":"task","text":"离散课：背单词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：文本切片策略（固定大小/语义分块）练习巩固"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"理解不同切片策略的差异，能动手切"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早上：高频词"},{"type":"task","text":"午休后：1套阅读（考前保持手感）"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：只做文档加载+切片的综合练习（不碰向量数据库和检索）"},{"type":"task","text":"下午+晚上：六级考前轻量复盘，不熬夜"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"文档加载+切片熟练；六级状态调整到位"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"【12.12 六级笔试日】上午考试，下午休整"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：参加六级考试"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"全天技术任务清零，下午休整放松，晚上早睡"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"六级考试完成，状态恢复"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"早课前：高频词"},{"type":"task","text":"六级考后轻松复盘"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课「自主学习」"},{"type":"task","text":"内容：DOM进阶+动态渲染"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"晚上：恢复RAG——嵌入模型使用+文本向量化"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（30分钟碎片：BOSS直聘/实习僧/牛客/小红书继任；简历写「待办项目+二手平台开发中」先投小公司练手，二手上线后更新简历再投更好岗）"}]}],"standard":"能将文本转为向量"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"上午：休整"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"下午：Chroma向量数据库入门+增删改查"},{"type":"task","text":"晚上：检索召回+大模型生成，跑通完整RAG流程并封装"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"本地跑通「文档→检索→回答」完整流程"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]},{"label":"第16周","dates":"12.14-12.20","title":"六级收官+期末复习启动","goal":"期末复习保命+碎片保持技术认知（LangGraph已全部移至寒假）","note":"","is_buffer":false,"days":[{"day":"周一","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"六级考后休整，不再背词"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"各门课程正常上课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"20分钟：看Agent技术文章保持认知（不写重代码）"},{"type":"task","text":"晚上：期末复习启动（课程作业/论文收尾）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（碎片30分钟，不占用复习时间）（期末复习周可暂停，学有余力再做）"}]}],"standard":"期末复习进入节奏"},{"day":"周二","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：离散数学课"},{"type":"task","text":"晚上：Java课"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"20分钟：看Agent文章"},{"type":"task","text":"下午+晚上：期末复习（离散数学）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（碎片30分钟，不占用复习时间）（期末复习周可暂停，学有余力再做）"}]}],"standard":"离散复习推进"},{"day":"周三","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"无课，全天自主安排"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"全天：期末复习（电子电路）"},{"type":"task","text":"碎片：20分钟Agent文章（可选）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（碎片30分钟，不占用复习时间）（期末复习周可暂停，学有余力再做）"}]}],"standard":"期末复习进入状态，LangGraph已全部移到寒假"},{"day":"周四","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"上午：公共课"},{"type":"task","text":"下午：思政类课程"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"全天：期末复习（思政/课程论文）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（碎片30分钟，不占用复习时间）（期末复习周可暂停，学有余力再做）"}]}],"standard":"期末复习稳步推进"},{"day":"周五","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[]},{"key":"school","icon":"🏫","label":"学校课程","items":[{"type":"task","text":"下午：Web前端技术课（正常上课）"}]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"全天：期末复习（Java/电子电路）"}]},{"key":"apply","icon":"📮","label":"投递","items":[{"type":"task","text":"日常实习10-15家（碎片30分钟，不占用复习时间）（期末复习周可暂停，学有余力再做）"}]}],"standard":"期末复习稳步推进"},{"day":"周六","is_rest":false,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[{"type":"task","text":"LeetCode Hot100 1道（中等优先）+ 1道简单题（巩固手感）（30-40分钟，早上/课间碎片时间，雷打不动）"}]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"全天：期末复习（重点科目）"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"期末复习进度过半"},{"day":"周日","is_rest":true,"sections":[{"key":"cet6","icon":"🎧","label":"六级任务","items":[{"type":"task","text":"单词轻量复盘20分钟"},{"type":"task","text":"不安排新学习任务"}]},{"key":"school","icon":"🏫","label":"学校课程","items":[]},{"key":"algo","icon":"🧩","label":"算法·碎片","items":[]},{"key":"tech","icon":"💻","label":"技术学习","items":[{"type":"task","text":"上午：完全休息（不安排任何任务）"},{"type":"task","text":"下午：本周复盘 + 补漏未完成任务（缓冲日，不排新任务）"},{"type":"task","text":"晚上：预习下周内容"}]},{"key":"apply","icon":"📮","label":"投递","items":[]}],"standard":"状态恢复；本周任务全部闭环；落后项已补齐"}]}]},{"id":"s3","name":"第17-19周：期末考试 + Web实训","time":"2026.12.21-2027.1.10","intro":"期末考集中在第17-18周；Web前端集中实训在第19周。期末周技术降级为轻量保持，实训周白天跟学校、晚上做自己的项目。","type":"block","blocks":[{"label":"第17周","dates":"12.21-12.27","title":"","theme":"期末考试周","time":"期末考试周","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"全力复习期末考试，保证不挂科"},{"type":"task","text":"技术保持：隔天15分钟看Agent文章（压力大就直接跳过），不写代码"}]}],"output":"期末考试成绩稳定"},{"label":"第18周","dates":"12.28-1.3","title":"","theme":"期末考试周","time":"期末考试周","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"期末考试（跨年）"},{"type":"task","text":"技术保持：隔天15分钟梳理寒假项目架构（可选）"}]}],"output":"期末考试全部完成"},{"label":"第19周","dates":"1.4-1.10","title":"Web前端集中实训周","theme":"Web实训周","time":"Web实训周","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"白天：跟着学校实训完成实训作业，直接把实训成果复用到三个项目的前端优化，统一设计风格，打磨成面试演示版本"},{"type":"task","text":"晚上：只做知识库Agent轻量任务——文档加载+切片（深度开发留到寒假，不搭框架）"}]}],"output":"实训作业完成 + 验收：能对一份PDF完成加载切片，打印切片数量和前3个切片内容"}]},{"id":"s4","name":"阶段三：寒假Agent攻坚·轻量化","time":"寒假约6周 · 2027.1.11起","intro":"项目分级（本版核心）：知识库Agent=唯一深度项目（RAG深度+RAGAS评估+部署上线）；客服多智能体=LangGraph Demo级（本地跑通即可，不做完整前后端）\n节奏：每天5-6小时含休息；每周留半天完全休息；每天算法1-2道保持手感；RAG评估每周固定做，不堆到最后\n产出原则：1个可验证高质量Agent项目 > 2个Demo","type":"block","blocks":[{"label":"寒假第1周","dates":"1.11起","title":"","theme":"大模型基础巩固","time":"大模型基础巩固","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"大模型API进阶+Function Call进阶+Prompt工程进阶"},{"type":"task","text":"每天：1-2道算法题保持手感"}]}],"output":"Function Call熟练+Prompt模板库扩充"},{"label":"寒假第2周","dates":"","title":"","theme":"RAG深度进阶","time":"RAG深度进阶","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"混合检索策略、重排序Rerank、上下文压缩、引用溯源"},{"type":"task","text":"【RAGAS评估】构建20-50条问答测试集，记录Top-1召回率和答案准确率"},{"type":"task","text":"每天：1-2道算法题"}]}],"output":"RAG深度优化完成+评估数据产出"},{"label":"寒假第3周","dates":"","title":"","theme":"知识库Agent开发","time":"知识库Agent开发","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"后端：文档上传、向量存储、对话生成API"},{"type":"task","text":"前端：Vue对话页+文档管理页（或用原生+模板快速拼），流式输出"},{"type":"task","text":"每天：1-2道算法题"}]}],"output":"验收标准：能演示「上传一份PDF → 提问 → 流式返回带引用来源的答案」"},{"label":"寒假第4周","dates":"","title":"","theme":"知识库Agent部署","time":"知识库Agent部署","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"Docker打包部署，上线公网"},{"type":"task","text":"编写README+演示视频"},{"type":"task","text":"整理评估数据（测试方法+测试集说明）"},{"type":"task","text":"每天：1-2道算法题"}]}],"output":"上线验收：README含架构图+RAGAS评估数据表+公网部署链接"},{"label":"寒假第5周","dates":"","title":"","theme":"LangGraph专项5天","time":"LangGraph专项5天","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"head","text":"【LangGraph专项5天（打牢基础，不启动多智能体）】"},{"type":"task","text":"Day1：StateGraph、节点、边、编译运行"},{"type":"task","text":"Day2：条件边、循环、状态更新"},{"type":"task","text":"Day3：Checkpoint、持久化、Human-in-the-loop"},{"type":"task","text":"Day4：多智能体模式（Supervisor/Swarm概念与简单demo）"},{"type":"task","text":"Day5：用LangGraph重写一个简单单Agent"},{"type":"task","text":"周日：休息半天"}]}],"output":"LangGraph系统掌握（多智能体Demo推迟到第6周）"},{"label":"寒假第6周","dates":"","title":"","theme":"多智能体Demo+评估+简历收尾","time":"多智能体Demo+评估+简历收尾","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"前3天：开发电商客服多智能体Demo（接待/订单查询/工单生成三角色，含记忆与转人工，本地跑通即可）"},{"type":"task","text":"第4天：评估——简化版主观测试+截图记录（不强制20-30轮模拟对话）"},{"type":"task","text":"第5天：简历初稿（突出知识库Agent，多智能体写成Demo级）"},{"type":"task","text":"第6天：寒假整体复盘+下周开学规划"},{"type":"task","text":"周日：休息半天"}]}],"output":"客服多智能体Demo完成+简历初稿+寒假复盘"}]},{"id":"s5","name":"阶段四：求职冲刺+暑假实习","time":"大二下学期 · 2027.3-8月","intro":"投递优先级：Python后端日常实习 > AI应用开发日常实习 > 中小公司全栈 > 大厂暑期实习。先把「有实习」落地，再追求含金量；11月即可启动投递练手\n节奏：第1-2周模拟面试3次（项目介绍+八股问答）→第3-4周集中面试当天复盘→第5-6周按反馈迭代项目→第7-8周offer选择→第9周起入职保持手感\n预案：若第8周仍未拿到offer，第9-12周继续投递+降低预期（远程/小公司/非Agent岗先上车），日常实习全年滚动","type":"block","blocks":[{"label":"开学第1-2周","dates":"","title":"","theme":"简历定稿+八股启动+投递","time":"简历定稿+八股启动+投递","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"用CodeCV写简历，突出知识库Agent核心项目"},{"type":"task","text":"每个项目写「背景-选型-难点-方案-优化」逐字稿"},{"type":"task","text":"八股：Python后端专项+LLM-Interview启动"},{"type":"task","text":"模拟面试3次（找同学互面/AI模拟），重点练项目介绍和八股问答"},{"type":"task","text":"投递30-50家中小公司Python后端/全岗"}]}],"output":"简历定稿+逐字稿成型+3次模拟面试完成+开始投递"},{"label":"开学第3-4周","dates":"","title":"","theme":"集中面试+当天复盘","time":"集中面试+当天复盘","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"每周面试2-3场，每次面试后当天复盘补漏"},{"type":"task","text":"每天投递10-15家保持漏斗"},{"type":"task","text":"每天：1小时八股+1小时算法（简单+中等）"},{"type":"task","text":"面试暴露的问题优先修"}]}],"output":"面试能力提升+建立面试问题库"},{"label":"开学第5-6周","dates":"","title":"","theme":"项目迭代+模拟面试","time":"项目迭代+模拟面试","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"根据面试反馈迭代知识库Agent项目"},{"type":"task","text":"继续投递+每周1场模拟面试"},{"type":"task","text":"八股进入第二轮（高频薄弱点专项）"}]}],"output":"项目按面试反馈优化+面试心态平稳"},{"label":"开学第7-8周","dates":"","title":"","theme":"offer选择+入职准备","time":"offer选择+入职准备","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"边面边优化，对比offer（薪资/技术栈/团队）"},{"type":"task","text":"入职前技术栈补漏（岗位JD要求逐项对照）"},{"type":"task","text":"暑期实习若有窗口继续投"}]}],"output":"2027年暑假实习敲定（中小公司/远程）"},{"label":"开学第9-12周","dates":"","title":"","theme":"实习中+保持手感","time":"实习中+保持手感","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"入职后快速融入团队"},{"type":"task","text":"每天30分钟算法保持手感"},{"type":"task","text":"边实习边为2028大三暑期正式实习攒素材"}]}],"output":"实习顺利+为下一年铺路"},{"label":"（预案）若第8周仍未拿到offer","dates":"","title":"","theme":"继续投递+降低预期","time":"继续投递+降低预期","sections":[{"key":"core","icon":"💻","label":"核心任务","items":[{"type":"task","text":"第9-12周继续投递：远程/小公司/非Agent岗先上车（日常实习全年滚动）"},{"type":"task","text":"同时保持每天算法1-2道 + 项目持续迭代"},{"type":"task","text":"暑假没拿到，大三上学期继续投，直到上岸"}]}],"output":"先上车一段实习；为2028暑期实习持续积累"}]}],"resources":[{"category":"Python基础","name":"B站黑马程序员Python教程（只看基础+面向对象部分）","desc":"入门快，对应第3-4周"},{"category":"Python基础","name":"Python官方文档（Tutorial）","desc":"遇到不懂查官方，建立准确概念"},{"category":"数据结构","name":"B站王卓《数据结构》（只看数组/链表/栈/队列/哈希/二分）","desc":"2倍速，配合Python手写实现"},{"category":"数据结构","name":"LeetCode热题100（筛简单题）","desc":"第5周起步，每天1-2道（分周进阶：简单→Hot100简单→中等），不深入DP/图论"},{"category":"数据库","name":"尚硅谷MySQL高级（索引/事务/慢查询）","desc":"第6周配合复习，面试重点"},{"category":"后端框架","name":"FastAPI官方中文文档（必看）","desc":"第7周项目驱动学习"},{"category":"后端框架","name":"SQLAlchemy官方文档/掘金《FastAPI+SQLAlchemy整合指南》","desc":"第8周ORM核心"},{"category":"Linux","name":"B站韩顺平Linux入门（文件/权限/进程/SSH/包管理）","desc":"第9-10周，够用线即可"},{"category":"Linux","name":"《鸟哥的Linux私房菜》（基础篇，按需查）","desc":"部署排查时查命令用"},{"category":"Docker","name":"B站狂神说Docker（基础到部署）","desc":"第12-13周，容器化部署核心"},{"category":"前端","name":"MDN Web Docs（HTML/CSS/JS）","desc":"Web课自学的权威来源"},{"category":"前端","name":"Bootstrap5官方中文文档","desc":"快速拼页面，不卷前端深度"},{"category":"大模型","name":"智谱AI/通义千问开放平台文档","desc":"第14周API调用实战"},{"category":"大模型","name":"吴恩达《Prompt Engineering》中文版","desc":"Prompt系统学习"},{"category":"RAG","name":"B站同济子豪兄《RAG从入门到实战》","desc":"第15周+寒假第2周，跑通全流程"},{"category":"RAG","name":"RAGAS官方文档","desc":"寒假第2周，量化评估知识库Agent"},{"category":"LangGraph","name":"LangGraph中文官网教程+官方GitHub examples","desc":"寒假第5周专项，带可运行代码"},{"category":"LangGraph","name":"Datawhale《Hello-Agents》","desc":"多智能体系统教程"},{"category":"AI编程工具","name":"Cursor / Claude Code 官方文档","desc":"2026年招聘常见要求，尽早用起来"},{"category":"八股面试","name":"Python后端面试专项题库（GitHub搜「Python-Interview」）","desc":"覆盖装饰器/生成器/GIL/异步/FastAPI/SQLAlchemy"},{"category":"八股面试","name":"GitHub「LLM-Interview」（Agent方向主八股）","desc":"汇总RAG、Agent、大模型应用面试题——主要来源"},{"category":"八股面试","name":"LeetCode热题100、牛客网剑指Offer","desc":"中小厂实习算法要求低，优先高频题"},{"category":"投递渠道","name":"BOSS直聘、实习僧","desc":"中小公司最多，日常实习全年滚动投递"},{"category":"投递渠道","name":"脉脉、小红书搜索「Python实习内推」「Agent实习内推」","desc":"找从业者内推，通过率更高"},{"category":"六级备考","name":"华研/星火六级真题（近5年）","desc":"12.12笔试：考前4周每周2套真题；只练阅读+听力，作文模板考前1周背"},{"category":"六级备考","name":"墨墨背单词/Anki + 每日英语听力APP","desc":"早课前新词30+复习昨日30自动安排；听力精听每天1篇"},{"category":"云服务器","name":"阿里云/腾讯云学生机（学生认证约10-20元/月）","desc":"第10周起练Linux；第13周二手平台部署、寒假知识库Agent上线共用"},{"category":"云服务器","name":"Nginx/Certbot官方文档（按需查）","desc":"反向代理、HTTPS证书一键申请，够用即可不深钻"}]}</script>
 
-<!-- ===== Application logic ===== -->
 <script>
 (function() {
 'use strict';
@@ -512,19 +584,64 @@ var OVERVIEW = DATA.overview || { stages: [], adjustments: [] };
 var STAGES = DATA.stages || [];
 var RESOURCES = DATA.resources || [];
 
-var STORAGE_KEY = 'study_checkin_v3_state';
-var THEME_KEY = 'study_checkin_v3_theme';
+var STORAGE_KEY = 'study_checkin_v3_light_state';
+var THEME_KEY = 'study_checkin_v3_light_theme';
+var MIGRATION_KEY = '__migrated_items_v1';
 
-/* 可打卡区块定义（daily） */
-var SECTIONS = [
-  { key: 'cet6',   label: '六级任务', icon: '🎧' },
-  { key: 'school', label: '学校课程', icon: '🏫' },
-  { key: 'tech',   label: '技术学习', icon: '💻' }
-];
-/* 可打卡区块定义（block）—— dayOrBlock 固定为 'core' */
-var BLOCK_SECTION = { key: 'core', label: '核心任务', icon: '💻' };
+/* 区块强调色——仅用于左侧边框点缀。icon/label 一律读自数据，绝不硬编码图标/名称映射。
+   未知 key 自动回退到主色，故该表仅影响观感、不影响正确性。 */
+var SECTION_ACCENT = {
+  cet6:   '#8B5CF6',
+  school: '#0EA5E9',
+  algo:   '#F59E0B',
+  tech:   '#4472C4',
+  apply:  '#EC4899',
+  core:   '#4472C4'
+};
+function accentFor(key) {
+  return SECTION_ACCENT[key] || 'var(--primary)';
+}
 
-/* Tab 短名映射 */
+/* 条件区块：内容为空时「整块不渲染」，只在真正有安排的日子出现。
+   例：投递（apply）——阶段一没有投递任务，就不该天天挂一个灰色「—」占位。
+   数据驱动：想加/减只需改这个数组；留空的区块照常显示灰色「—」。 */
+var HIDE_WHEN_EMPTY = ['apply'];
+function isSectionHidden(sec) {
+  if (!sec) return false;
+  if (HIDE_WHEN_EMPTY.indexOf(sec.key) === -1) return false;
+  return !((sec.items || []).length > 0);
+}
+/* 遍历某阶段所有「单元」（daily=每天 / block=每块）的区块 */
+function eachStageSection(stage, fn) {
+  if (!stage) return;
+  if (stage.type === 'daily') {
+    (stage.weeks || []).forEach(function (w) {
+      (w.days || []).forEach(function (d) { sectionsOf(d).forEach(fn); });
+    });
+  } else {
+    (stage.blocks || []).forEach(function (b) { sectionsOf(b).forEach(fn); });
+  }
+}
+/* 该阶段中「会被条件隐藏、且确实存在内容」的区块名称（用于工具条提示），如 ['📮 投递'] */
+function conditionalSectionLabels(stage) {
+  var seen = {}, out = [];
+  eachStageSection(stage, function (sec) {
+    if (!sec || HIDE_WHEN_EMPTY.indexOf(sec.key) === -1) return;
+    if (!((sec.items || []).length > 0) || seen[sec.key]) return;
+    seen[sec.key] = 1;
+    out.push((sec.icon ? sec.icon + ' ' : '') + sec.label);
+  });
+  return out;
+}
+/* 工具条提示文案：仅当本阶段确实存在这类区块时出现，避免无谓的噪音 */
+function conditionalNoteHtml(stage) {
+  var labels = conditionalSectionLabels(stage);
+  if (!labels.length) return '';
+  var names = labels.map(function (t) { return escHtml(t); }).join(' · ');
+  return '<span class="section-hide-note">' + names + '：仅在有安排的日子显示</span>';
+}
+
+/* Tab 短名映射（纯展示，非数据映射） */
 var TAB_META = [
   { id: 's1', short: '阶段一' },
   { id: 's2', short: '阶段二' },
@@ -537,7 +654,7 @@ var TAB_META = [
 var NEXT = { 0: 1, 1: 2, 2: 0 };
 
 /* ============================================================
-   2. 状态（localStorage 持久化）
+   2. 状态（localStorage 持久化，读写包 try/catch）
    ============================================================ */
 function loadState() {
   try {
@@ -552,16 +669,68 @@ function saveState() {
 }
 var state = loadState();
 
-/* stageId | weekLabelOrBlockLabel | dayOrBlock | section  ——全局唯一 */
-function statusKey(stageId, group, day, section) {
-  return stageId + '|' + group + '|' + day + '|' + section;
+/* 新 key（条目级）：stageId|group|dayOrCore|sectionKey|itemIndex
+   itemIndex = task 条目在其 section.items 数组中的真实下标（含 head 占位）
+   head 条目不产生任何 key / 状态 */
+function itemKey(stageId, group, dayOrCore, section, index) {
+  return stageId + '|' + group + '|' + dayOrCore + '|' + section + '|' + index;
 }
-function getStatus(stageId, group, day, section) {
-  return state[statusKey(stageId, group, day, section)] || 0;
+/* 旧 key（区块级，4 段）：迁移时读取用 */
+function legacyKey(stageId, group, dayOrCore, section) {
+  return stageId + '|' + group + '|' + dayOrCore + '|' + section;
+}
+function getItemStatus(stageId, group, dayOrCore, section, index) {
+  return state[itemKey(stageId, group, dayOrCore, section, index)] || 0;
 }
 
 /* ============================================================
-   3. 通用工具
+   3. 旧数据迁移（区块级 -> 条目级，一次性、幂等、绝不崩溃）
+   ============================================================ */
+function runMigration() {
+  try {
+    if (localStorage.getItem(MIGRATION_KEY)) return;   /* 幂等护栏：只跑一次 */
+    var changed = false;
+
+    function propagate(stageId, group, dayOrCore, sec) {
+      var old = state[legacyKey(stageId, group, dayOrCore, sec.key)];
+      if (old !== 1 && old !== 2) return;              /* 旧状态非 0 才迁移 */
+      var items = sec.items || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type !== 'task') continue;        /* head 不迁移 */
+        var k = itemKey(stageId, group, dayOrCore, sec.key, i);
+        if (state[k] === undefined) {                  /* 不覆盖已有新状态 */
+          state[k] = old;
+          changed = true;
+        }
+      }
+    }
+
+    STAGES.forEach(function (stage) {
+      if (stage.type === 'daily') {
+        (stage.weeks || []).forEach(function (w) {
+          (w.days || []).forEach(function (day) {
+            sectionsOf(day).forEach(function (sec) {
+              propagate(stage.id, w.label, day.day, sec);
+            });
+          });
+        });
+      } else {
+        (stage.blocks || []).forEach(function (b) {
+          sectionsOf(b).forEach(function (sec) {
+            propagate(stage.id, b.label, 'core', sec);
+          });
+        });
+      }
+    });
+
+    if (changed) saveState();
+    /* 无论是否存在旧数据都写入标志位；旧 key 保留（无害，便于回溯） */
+    localStorage.setItem(MIGRATION_KEY, '1');
+  } catch (e) { /* 旧数据损坏也不能导致白屏 */ }
+}
+
+/* ============================================================
+   4. 通用工具
    ============================================================ */
 function escHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -570,72 +739,111 @@ function escHtml(s) {
 }
 function nl2br(s) { return escHtml(s).replace(/\n/g, '<br>'); }
 
-/* 打卡项判定：内容非空且不等于「—」*/
+/* 非空判定（用于 day.standard / block.output 等非打卡高亮条） */
 function isCheckable(v) {
   if (v === null || v === undefined) return false;
   var t = String(v).trim();
   return t !== '' && t !== '—' && t !== '–' && t !== '-' && t !== '－';
 }
+function sectionsOf(obj) { return (obj && obj.sections) ? obj.sections : []; }
 function stageById(id) {
   for (var i = 0; i < STAGES.length; i++) if (STAGES[i].id === id) return STAGES[i];
   return null;
 }
+function findWeek(stage, weekLabel) {
+  var weeks = (stage && stage.weeks) ? stage.weeks : [];
+  for (var i = 0; i < weeks.length; i++) if (weeks[i].label === weekLabel) return weeks[i];
+  return null;
+}
+function findDay(week, dayName) {
+  var days = (week && week.days) ? week.days : [];
+  for (var i = 0; i < days.length; i++) if (days[i].day === dayName) return days[i];
+  return null;
+}
+function findBlock(stage, blockLabel) {
+  var blocks = (stage && stage.blocks) ? stage.blocks : [];
+  for (var i = 0; i < blocks.length; i++) if (blocks[i].label === blockLabel) return blocks[i];
+  return null;
+}
+function findSec(secs, key) {
+  secs = secs || [];
+  for (var i = 0; i < secs.length; i++) if (secs[i].key === key) return secs[i];
+  return null;
+}
+function findSectionObj(stage, group, dayOrCore, sectionKey) {
+  if (!stage) return null;
+  if (stage.type === 'daily') {
+    var w = findWeek(stage, group);
+    if (!w) return null;
+    var d = findDay(w, dayOrCore);
+    if (!d) return null;
+    return findSec(sectionsOf(d), sectionKey);
+  }
+  var b = findBlock(stage, group);
+  if (!b) return null;
+  return findSec(sectionsOf(b), sectionKey);
+}
 
 /* ============================================================
-   4. 进度计算（仅统计可打卡项）
+   5. 进度计算（按 task 条目统计；head / 占位均不计入分母）
    ============================================================ */
-function calcDay(stageId, weekLabel, day) {
+function addStats(a, b) { a.total += b.total; a.done += b.done; a.prog += b.prog; return a; }
+function itemStats(stageId, group, dayOrCore, sec) {
   var total = 0, done = 0, prog = 0;
-  SECTIONS.forEach(function (sec) {
-    if (!isCheckable(day[sec.key])) return;
+  var items = (sec && sec.items) ? sec.items : [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type !== 'task') continue;
     total++;
-    var st = getStatus(stageId, weekLabel, day.day, sec.key);
+    var st = getItemStatus(stageId, group, dayOrCore, sec.key, i);
     if (st === 2) done++; else if (st === 1) prog++;
-  });
+  }
   return { total: total, done: done, prog: prog };
 }
+function calcDay(stageId, weekLabel, day) {
+  var s = { total: 0, done: 0, prog: 0 };
+  sectionsOf(day).forEach(function (sec) { addStats(s, itemStats(stageId, weekLabel, day.day, sec)); });
+  return s;
+}
 function calcWeek(stageId, week) {
-  var t = 0, d = 0, p = 0;
-  (week.days || []).forEach(function (day) {
-    var s = calcDay(stageId, week.label, day);
-    t += s.total; d += s.done; p += s.prog;
-  });
-  return { total: t, done: d, prog: p };
+  var s = { total: 0, done: 0, prog: 0 };
+  (week.days || []).forEach(function (day) { addStats(s, calcDay(stageId, week.label, day)); });
+  return s;
 }
 function calcBlock(stageId, block) {
-  if (!isCheckable(block.core)) return { total: 0, done: 0, prog: 0 };
-  var st = getStatus(stageId, block.label, 'core', 'core');
-  return { total: 1, done: st === 2 ? 1 : 0, prog: st === 1 ? 1 : 0 };
+  var s = { total: 0, done: 0, prog: 0 };
+  sectionsOf(block).forEach(function (sec) { addStats(s, itemStats(stageId, block.label, 'core', sec)); });
+  return s;
 }
 function calcStage(stage) {
-  var t = 0, d = 0, p = 0;
+  var s = { total: 0, done: 0, prog: 0 };
   if (stage.type === 'daily') {
-    (stage.weeks || []).forEach(function (w) { var s = calcWeek(stage.id, w); t += s.total; d += s.done; p += s.prog; });
+    (stage.weeks || []).forEach(function (w) { addStats(s, calcWeek(stage.id, w)); });
   } else {
-    (stage.blocks || []).forEach(function (b) { var s = calcBlock(stage.id, b); t += s.total; d += s.done; p += s.prog; });
+    (stage.blocks || []).forEach(function (b) { addStats(s, calcBlock(stage.id, b)); });
   }
-  return { total: t, done: d, prog: p, pct: t ? Math.round(d / t * 100) : 0 };
+  s.pct = s.total ? Math.round(s.done / s.total * 100) : 0;
+  return s;
 }
 function calcGlobal() {
-  var t = 0, d = 0, p = 0;
-  STAGES.forEach(function (s) { var r = calcStage(s); t += r.total; d += r.done; p += r.prog; });
-  return { total: t, done: d, prog: p, pct: t ? Math.round(d / t * 100) : 0 };
+  var s = { total: 0, done: 0, prog: 0 };
+  STAGES.forEach(function (stage) { addStats(s, calcStage(stage)); });
+  s.pct = s.total ? Math.round(s.done / s.total * 100) : 0;
+  return s;
 }
 
 /* ============================================================
-   5. 当前周高亮
+   6. 当前周高亮
    扁平周序号 = floor((today - planStart)/7天) + 1（planStart 当天 = 1）
-   映射到全局扁平周序号（s1 的 8 周为 1-8，s2 的 6 周为 9-14）
    ============================================================ */
 function parseISODate(str) {
   var m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(str || ''));
   if (!m) return null;
   return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
 }
-var FLAT_INDEX = {};        /* stageId|weekLabel -> 1-based flat index */
+var FLAT_INDEX = {};        /* "stageId|weekLabel" -> 1-based flat index */
 var CURRENT_FLAT = -1;      /* 当前扁平周序号，<=0 表示不高亮 */
 (function buildWeekIndex() {
-  var idx = 0, planStart, days, flat;
+  var idx = 0;
   STAGES.forEach(function (stage) {
     if (stage.type !== 'daily') return;
     (stage.weeks || []).forEach(function (w) {
@@ -643,25 +851,25 @@ var CURRENT_FLAT = -1;      /* 当前扁平周序号，<=0 表示不高亮 */
       FLAT_INDEX[stage.id + '|' + w.label] = idx;
     });
   });
-  planStart = parseISODate(META.planStart);
+  var planStart = parseISODate(META.planStart);
   if (!planStart) { CURRENT_FLAT = -1; return; }
   var now = new Date(); now.setHours(0, 0, 0, 0);
-  days = Math.floor((now.getTime() - planStart.getTime()) / 86400000);
-  flat = Math.floor(days / 7) + 1;                     /* planStart 当天对应扁平周 1 */
+  var days = Math.floor((now.getTime() - planStart.getTime()) / 86400000);
+  var flat = Math.floor(days / 7) + 1;
   CURRENT_FLAT = (flat >= 1 && flat <= idx) ? flat : -1;
 })();
 
 /* ============================================================
-   6. 展开/收起状态（默认全部展开）
+   7. 展开/收起状态（默认全部展开）
    ============================================================ */
 var expandState = {}; /* "stageId|weekLabel" -> bool */
 
 /* ============================================================
-   7. 渲染：进度卡
+   8. 渲染：进度卡
    ============================================================ */
 function progressCardHtml(stats) {
   return '' +
-    '<div class="progress-card"><div class="value">' + stats.total + '</div><div class="label">总打卡项</div></div>' +
+    '<div class="progress-card"><div class="value">' + stats.total + '</div><div class="label">总打卡条目</div></div>' +
     '<div class="progress-card"><div class="value" style="color:#059669">' + stats.done + '</div><div class="label">已完成</div>' +
       '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + stats.pct + '%;background:#059669"></div></div></div>' +
     '<div class="progress-card"><div class="value" style="color:#D97706">' + stats.prog + '</div><div class="label">进行中</div></div>' +
@@ -679,7 +887,7 @@ function renderStageProgress(stageId) {
 }
 
 /* ============================================================
-   8. 渲染：Tab
+   9. 渲染：Tab
    ============================================================ */
 function shortName(stage, idx) {
   for (var i = 0; i < TAB_META.length; i++) if (TAB_META[i].id === stage.id) return TAB_META[i].short;
@@ -701,7 +909,7 @@ function renderTabs() {
 }
 
 /* ============================================================
-   9. 渲染：阶段概览
+   10. 渲染：阶段概览（+ 首个 Tab 展示 meta.positioning）
    ============================================================ */
 function overviewHtml(stage, isFirst) {
   var h = '<div class="stage-overview">';
@@ -724,40 +932,94 @@ function overviewHtml(stage, isFirst) {
 }
 
 /* ============================================================
-   10. 渲染：可打卡/占位区块
+   11. 渲染：单个区块（数据驱动，icon/label 来自 sec.icon / sec.label）
+   —— A 单条目紧凑行 / B 多条目卡片 / 占位「—」三种形态
    ============================================================ */
-function sectionHtml(stage, group, dayOrCore, sec, content) {
-  if (!isCheckable(content)) {
-    return '<div class="section-block placeholder" data-checkable="0">' +
-      '<div class="section-check"></div>' +
-      '<div class="section-body">' +
-        '<div class="section-label">' + sec.icon + ' ' + escHtml(sec.label) + '</div>' +
-        '<div class="section-text"><span class="muted">—</span></div>' +
-      '</div></div>';
+function sectionCellHtml(stage, group, dayOrCore, sec) {
+  var items = (sec && sec.items) ? sec.items : [];
+  var accent = accentFor(sec.key);
+  var icon = sec.icon ? escHtml(sec.icon) + ' ' : '';
+  var labelText = icon + escHtml(sec.label);
+
+  /* 占位区块：items 为空 —— 灰色「—」，不可点击 */
+  if (items.length === 0) {
+    return '<div class="section-block placeholder" style="border-left-color:' + accent + '">' +
+             '<div class="section-check"></div>' +
+             '<div class="section-body">' +
+               '<div class="section-label">' + labelText + '</div>' +
+               '<div class="section-text"><span class="muted">—</span></div>' +
+             '</div></div>';
   }
-  var st = getStatus(stage.id, group, dayOrCore, sec.key);
-  return '<div class="section-block" data-checkable="1" data-status="' + st + '"' +
-      ' data-stage="' + escHtml(stage.id) + '" data-group="' + escHtml(group) + '"' +
-      ' data-day="' + escHtml(dayOrCore) + '" data-section="' + escHtml(sec.key) + '"' +
-      ' title="点击切换状态：未开始 → 进行中 → 已完成">' +
-      '<div class="section-check">' + (st === 2 ? '✓' : (st === 1 ? '⋯' : '')) + '</div>' +
-      '<div class="section-body">' +
-        '<div class="section-label">' + sec.icon + ' ' + escHtml(sec.label) + '</div>' +
-        '<div class="section-text">' + nl2br(content) + '</div>' +
-      '</div></div>';
+
+  var taskCount = 0, headCount = 0;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type === 'task') taskCount++;
+    else if (items[i].type === 'head') headCount++;
+  }
+
+  /* A. 单条目区块（仅 1 个 task 且无 head）—— 不渲染区块头，紧凑可打卡行 */
+  if (taskCount === 1 && headCount === 0) {
+    var idx = -1;
+    for (var j = 0; j < items.length; j++) { if (items[j].type === 'task') { idx = j; break; } }
+    var st = getItemStatus(stage.id, group, dayOrCore, sec.key, idx);
+    return '<div class="section-block single checkable" data-checkable="1" data-status="' + st + '"' +
+             ' style="border-left-color:' + accent + '"' +
+             ' data-stage="' + escHtml(stage.id) + '" data-group="' + escHtml(group) + '"' +
+             ' data-day="' + escHtml(dayOrCore) + '" data-section="' + escHtml(sec.key) + '" data-index="' + idx + '"' +
+             ' title="点击切换状态：未开始 → 进行中 → 已完成">' +
+             '<div class="section-check">' + (st === 2 ? '✓' : (st === 1 ? '⋯' : '')) + '</div>' +
+             '<span class="single-label">' + labelText + ' ·</span>' +
+             '<span class="single-text">' + nl2br(items[idx].text) + '</span>' +
+           '</div>';
+  }
+
+  /* B. 多条目区块 —— 卡片 */
+  var stats = itemStats(stage.id, group, dayOrCore, sec);
+  var h = '<div class="section-block multi" style="border-left-color:' + accent + '">';
+  h += '<div class="section-block-header">' +
+         '<span class="section-label">' + labelText + '</span>' +
+         '<span class="section-badge">' + stats.done + '/' + stats.total + '</span>' +
+       '</div>';
+  h += '<div class="section-items">';
+  for (var k = 0; k < items.length; k++) {
+    var it = items[k];
+    if (!it || !it.type) continue;
+    if (it.type === 'head') {
+      /* head：分组小标题，不可打卡、不产生 key、不计入分母 */
+      h += '<div class="item-head">' + escHtml(it.text) + '</div>';
+    } else if (it.type === 'task') {
+      var kit = getItemStatus(stage.id, group, dayOrCore, sec.key, k);
+      h += '<div class="item-row checkable" data-checkable="1" data-status="' + kit + '"' +
+             ' data-stage="' + escHtml(stage.id) + '" data-group="' + escHtml(group) + '"' +
+             ' data-day="' + escHtml(dayOrCore) + '" data-section="' + escHtml(sec.key) + '" data-index="' + k + '"' +
+             ' title="点击切换状态：未开始 → 进行中 → 已完成">' +
+             '<div class="section-check">' + (kit === 2 ? '✓' : (kit === 1 ? '⋯' : '')) + '</div>' +
+             '<div class="item-text">' + nl2br(it.text) + '</div>' +
+           '</div>';
+    }
+  }
+  h += '</div></div>';
+  return h;
 }
 
 /* ============================================================
-   11. 渲染：daily 阶段（周 -> 天）
+   12. 渲染：daily 阶段（周 -> 天 -> 区块网格）
    ============================================================ */
 function dayCardHtml(stage, week, day) {
   var stats = calcDay(stage.id, week.label, day);
-  var h = '<div class="day-card">';
-  h += '<div class="day-header"><span class="day-title">' + escHtml(day.day) + '</span>' +
+  var isRest = day.is_rest === true;
+  var h = '<div class="day-card' + (isRest ? ' rest-day' : '') + '">';
+  h += '<div class="day-header"><span class="day-head-left">' +
+       '<span class="day-title">' + escHtml(day.day) + '</span>' +
+       (isRest ? '<span class="rest-badge">缓冲日 · 完全休息+复盘补漏</span>' : '') +
+       '</span>' +
        '<span class="day-badge">' + stats.done + '/' + stats.total + '</span></div>';
-  SECTIONS.forEach(function (sec) {
-    h += sectionHtml(stage, week.label, day.day, sec, day[sec.key]);
+  h += '<div class="section-grid">';
+  sectionsOf(day).forEach(function (sec) {
+    if (isSectionHidden(sec)) return;          /* 条件区块：空白时整块不渲染 */
+    h += sectionCellHtml(stage, week.label, day.day, sec);
   });
+  h += '</div>';
   if (isCheckable(day.standard)) {
     h += '<div class="standard-bar"><span class="standard-label">🎯 达标标准</span>' +
          '<span class="standard-text">' + nl2br(day.standard) + '</span></div>';
@@ -768,7 +1030,7 @@ function dayCardHtml(stage, week, day) {
 
 function weekHtml(stage, week) {
   var wkKey = stage.id + '|' + week.label;
-  var isBuffer = !!week.is_buffer;
+  var isBuffer = !!week.is_buffer;                 /* 兼容旧字段，本版不用它显示徽章 */
   var isCurrent = (FLAT_INDEX[wkKey] === CURRENT_FLAT) && CURRENT_FLAT > 0;
   var expanded = expandState[wkKey] !== false;
   var stats = calcWeek(stage.id, week);
@@ -781,7 +1043,6 @@ function weekHtml(stage, week) {
   h += '<span class="arrow">▼</span>';
   h += '<span class="week-title">' + escHtml(week.label) + '</span>';
   if (subtitle) h += '<span class="week-subtitle">' + subtitle + '</span>';
-  if (isBuffer) h += '<span class="week-badge buffer-badge">缓冲周</span>';
   if (isCurrent) h += '<span class="week-badge current-badge">当前周</span>';
   h += '<span class="week-meta">' + stats.done + '/' + stats.total + '</span>';
   h += '</div>';
@@ -804,6 +1065,7 @@ function renderDailyStage(stage) {
   h += '<div class="toolbar">' +
          '<input class="search-input" type="text" placeholder="🔍 搜索本阶段任务关键词…" data-search="' + escHtml(stage.id) + '">' +
          '<span class="search-hint" id="searchhint-' + escHtml(stage.id) + '"></span>' +
+         conditionalNoteHtml(stage) +
          '<button class="btn active-btn" data-expand="' + escHtml(stage.id) + '">📁 全部收起</button>' +
        '</div>';
   h += '<div class="week-list" id="list-' + escHtml(stage.id) + '">';
@@ -813,19 +1075,26 @@ function renderDailyStage(stage) {
 }
 
 /* ============================================================
-   12. 渲染：block 阶段（块卡片）
+   13. 渲染：block 阶段（块卡片 -> 区块网格）
    ============================================================ */
 function blockCardHtml(stage, block) {
   var stats = calcBlock(stage.id, block);
+  var hasDates = !!(block.dates && String(block.dates).trim() !== '' && String(block.dates).trim() !== '—');
+  var theme = block.theme || block.time || '';
   var h = '<div class="block-card">';
   h += '<div class="block-header"><div class="block-head-main">' +
          '<span class="block-label">' + escHtml(block.label) + '</span>' +
-         (block.dates ? '<span class="block-dates">' + escHtml(block.dates) + '</span>' : '') +
+         (hasDates ? '<span class="block-dates">' + escHtml(block.dates) + '</span>' : '') +
        '</div>' +
        '<span class="block-badge">' + stats.done + '/' + stats.total + '</span></div>';
-  if (block.theme) h += '<div class="block-theme">' + escHtml(block.theme) + '</div>';
-  if (block.title && block.title !== block.theme) h += '<div class="block-title">' + escHtml(block.title) + '</div>';
-  h += sectionHtml(stage, block.label, 'core', BLOCK_SECTION, block.core);
+  if (theme) h += '<div class="block-theme">' + escHtml(theme) + '</div>';
+  if (block.title && block.title !== theme) h += '<div class="block-title">' + escHtml(block.title) + '</div>';
+  h += '<div class="section-grid">';
+  sectionsOf(block).forEach(function (sec) {
+    if (isSectionHidden(sec)) return;          /* 条件区块：空白时整块不渲染 */
+    h += sectionCellHtml(stage, block.label, 'core', sec);
+  });
+  h += '</div>';
   if (isCheckable(block.output)) {
     h += '<div class="standard-bar"><span class="standard-label">🎯 关键产出</span>' +
          '<span class="standard-text">' + nl2br(block.output) + '</span></div>';
@@ -841,6 +1110,7 @@ function renderBlockStage(stage) {
   h += '<div class="toolbar">' +
          '<input class="search-input" type="text" placeholder="🔍 搜索本阶段任务关键词…" data-search="' + escHtml(stage.id) + '">' +
          '<span class="search-hint" id="searchhint-' + escHtml(stage.id) + '"></span>' +
+         conditionalNoteHtml(stage) +
        '</div>';
   h += '<div class="block-list" id="list-' + escHtml(stage.id) + '">';
   (stage.blocks || []).forEach(function (b) { h += blockCardHtml(stage, b); });
@@ -849,7 +1119,7 @@ function renderBlockStage(stage) {
 }
 
 /* ============================================================
-   13. 渲染：资源
+   14. 渲染：资源
    ============================================================ */
 function renderResources() {
   var panel = document.getElementById('panel-resources');
@@ -875,7 +1145,7 @@ function renderResources() {
 }
 
 /* ============================================================
-   14. 渲染：全部
+   15. 渲染：全部
    ============================================================ */
 function renderAll() {
   if (META.title) document.getElementById('appTitle').textContent = META.title;
@@ -891,54 +1161,52 @@ function renderAll() {
 }
 
 /* ============================================================
-   15. 局部更新（增量，保留滚动位置）
+   16. 局部更新（增量：只改被点条目 + 相关进度数字，保留滚动位置）
    ============================================================ */
-function findWeek(stage, weekLabel) {
-  var weeks = stage.weeks || [];
-  for (var i = 0; i < weeks.length; i++) if (weeks[i].label === weekLabel) return weeks[i];
-  return null;
-}
-function findDay(week, dayName) {
-  var days = week.days || [];
-  for (var i = 0; i < days.length; i++) if (days[i].day === dayName) return days[i];
-  return null;
-}
-function findBlock(stage, blockLabel) {
-  var blocks = stage.blocks || [];
-  for (var i = 0; i < blocks.length; i++) if (blocks[i].label === blockLabel) return blocks[i];
-  return null;
-}
+function onToggleCheckable(el) {
+  if (el.dataset.checkable !== '1') return;
+  var stageId = el.dataset.stage;
+  var group = el.dataset.group;
+  var day = el.dataset.day;
+  var section = el.dataset.section;
+  var index = parseInt(el.dataset.index, 10);
+  if (!stageId || isNaN(index)) return;
 
-function onToggleSection(sec) {
-  if (sec.dataset.checkable !== '1') return;
-  var stageId = sec.dataset.stage;
-  var group = sec.dataset.group;
-  var day = sec.dataset.day;
-  var section = sec.dataset.section;
-  var cur = getStatus(stageId, group, day, section);
+  var cur = getItemStatus(stageId, group, day, section, index);
   var next = NEXT[cur];
-  state[statusKey(stageId, group, day, section)] = next;
+  state[itemKey(stageId, group, day, section, index)] = next;
   saveState();
 
-  /* 只更新被点击的元素 */
-  sec.dataset.status = String(next);
-  var chk = sec.querySelector('.section-check');
+  /* 只更新被点击的元素自身 */
+  el.dataset.status = String(next);
+  var chk = el.querySelector('.section-check');
   if (chk) chk.textContent = next === 2 ? '✓' : (next === 1 ? '⋯' : '');
 
   var stage = stageById(stageId);
   if (!stage) return;
 
+  /* 更新所属多条目区块的 x/y 徽章 */
+  var secCard = el.closest('.section-block');
+  if (secCard && secCard.classList.contains('multi')) {
+    var secObj = findSectionObj(stage, group, day, section);
+    if (secObj) {
+      var ss = itemStats(stageId, group, day, secObj);
+      var badge = secCard.querySelector('.section-badge');
+      if (badge) badge.textContent = ss.done + '/' + ss.total;
+    }
+  }
+
   if (stage.type === 'daily') {
     var week = findWeek(stage, group);
     if (week) {
-      var card = sec.closest('.day-card');
       var d = findDay(week, day);
+      var card = el.closest('.day-card');
       if (card && d) {
         var ds = calcDay(stageId, group, d);
-        var badge = card.querySelector('.day-badge');
-        if (badge) badge.textContent = ds.done + '/' + ds.total;
+        var db = card.querySelector('.day-badge');
+        if (db) db.textContent = ds.done + '/' + ds.total;
       }
-      var groupEl = sec.closest('.week-group');
+      var groupEl = el.closest('.week-group');
       if (groupEl) {
         var ws = calcWeek(stageId, week);
         var meta = groupEl.querySelector('.week-meta');
@@ -948,11 +1216,11 @@ function onToggleSection(sec) {
   } else {
     var block = findBlock(stage, group);
     if (block) {
-      var bcard = sec.closest('.block-card');
+      var bcard = el.closest('.block-card');
       if (bcard) {
         var bs = calcBlock(stageId, block);
-        var bbadge = bcard.querySelector('.block-badge');
-        if (bbadge) bbadge.textContent = bs.done + '/' + bs.total;
+        var bb = bcard.querySelector('.block-badge');
+        if (bb) bb.textContent = bs.done + '/' + bs.total;
       }
     }
   }
@@ -961,7 +1229,7 @@ function onToggleSection(sec) {
 }
 
 /* ============================================================
-   16. 交互：折叠周 / 全部展开收起 / 调整说明 / 搜索 / Tab
+   17. 交互：折叠周 / 全部展开收起 / 调整说明 / 搜索 / Tab
    ============================================================ */
 function toggleWeek(hdr) {
   var wkKey = hdr.dataset.weekkey;
@@ -992,7 +1260,7 @@ function toggleExpandAll(btn) {
   syncExpandButton(stageId);
 }
 
-/* 依据 expandState 同步“全部收起/展开”按钮的文案与高亮（唯一判据来源） */
+/* 依据 expandState 同步「全部收起/展开」按钮的文案与高亮（唯一判据来源） */
 function syncExpandButton(stageId) {
   var btn = document.querySelector('[data-expand="' + stageId + '"]');
   var list = document.getElementById('list-' + stageId);
@@ -1025,7 +1293,7 @@ function applySearch(input) {
   var shown = 0;
 
   if (isDaily) {
-    /* 逐周分组：命中卡片保留在组内，组内 0 命中则隐藏整个分组容器（避免空壳） */
+    /* 逐周分组：命中的天卡片保留在组内，组内 0 命中则隐藏整个分组容器 */
     list.querySelectorAll('.week-group').forEach(function (g) {
       var groupHits = 0;
       g.querySelectorAll('.day-card').forEach(function (c) {
@@ -1072,7 +1340,7 @@ function switchTab(tabId) {
 }
 
 /* ============================================================
-   17. 主题
+   18. 主题
    ============================================================ */
 function setDark(isDark) {
   if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
@@ -1095,7 +1363,7 @@ if (themeToggle) {
 }
 
 /* ============================================================
-   18. 事件委托
+   19. 事件委托
    ============================================================ */
 document.addEventListener('click', function (e) {
   var tabBtn = e.target.closest('.tab-btn');
@@ -1107,8 +1375,8 @@ document.addEventListener('click', function (e) {
   var expBtn = e.target.closest('[data-expand]');
   if (expBtn) { toggleExpandAll(expBtn); return; }
 
-  var sec = e.target.closest('.section-block');
-  if (sec) { onToggleSection(sec); return; }
+  var ck = e.target.closest('.checkable');
+  if (ck) { onToggleCheckable(ck); return; }
 
   var wkHdr = e.target.closest('.week-header');
   if (wkHdr) { toggleWeek(wkHdr); return; }
@@ -1127,8 +1395,9 @@ document.addEventListener('keydown', function (e) {
 });
 
 /* ============================================================
-   19. 启动
+   20. 启动（迁移须先于渲染，保证状态就绪）
    ============================================================ */
+runMigration();
 initTheme();
 renderAll();
 
