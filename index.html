@@ -546,6 +546,9 @@ body{
       <span id="appTitle">学习打卡 · 全阶段规划（轻量化细化版v3）</span>
     </div>
     <div class="header-actions">
+      <button class="theme-toggle" id="exportProgress" title="把当前打卡进度导出为 JSON 备份文件">⬇️ 导出进度</button>
+      <button class="theme-toggle" id="importProgress" title="从备份文件恢复打卡进度（与现有进度合并，取较高状态）">⬆️ 导入进度</button>
+      <input type="file" id="importProgressFile" accept=".json,application/json" hidden>
       <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙 深色模式</button>
     </div>
   </div>
@@ -1361,6 +1364,85 @@ if (themeToggle) {
     var nextDark = document.documentElement.getAttribute('data-theme') !== 'dark';
     setDark(nextDark);
     try { localStorage.setItem(THEME_KEY, nextDark ? 'dark' : 'light'); } catch (e) {}
+  });
+}
+
+/* ============================================================
+   18.5 进度导出 / 导入（换设备或把本地文件的进度搬到网页版）
+   ============================================================ */
+function collectProgress() {
+  var out = {};
+  for (var k in state) {
+    if (!Object.prototype.hasOwnProperty.call(state, k)) continue;
+    if (state[k] === 1 || state[k] === 2) out[k] = state[k];
+  }
+  return out;
+}
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+var exportBtn = document.getElementById('exportProgress');
+if (exportBtn) {
+  exportBtn.addEventListener('click', function () {
+    try {
+      var data = collectProgress();
+      var d = new Date();
+      var name = 'study-checkin-progress-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) +
+                 '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + '.json';
+      var payload = {
+        app: 'study-checkin',
+        storageKey: STORAGE_KEY,
+        exportedAt: d.toISOString(),
+        count: Object.keys(data).length,
+        state: data
+      };
+      var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {
+      alert('导出失败，请换个浏览器重试');
+    }
+  });
+}
+
+var importBtn = document.getElementById('importProgress');
+var importFile = document.getElementById('importProgressFile');
+if (importBtn && importFile) {
+  importBtn.addEventListener('click', function () { importFile.click(); });
+  importFile.addEventListener('change', function () {
+    var f = importFile.files && importFile.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var raw = JSON.parse(String(reader.result));
+        var incoming = (raw && raw.state && typeof raw.state === 'object') ? raw.state : raw;
+        if (!incoming || typeof incoming !== 'object') throw new Error('文件内容不是进度对象');
+        var merged = 0;
+        for (var k in incoming) {
+          if (!Object.prototype.hasOwnProperty.call(incoming, k)) continue;
+          var v = incoming[k];
+          if (v !== 1 && v !== 2) continue;          /* 只接受 1=进行中 / 2=已完成 */
+          var cur = state[k] || 0;
+          if (v > cur) { state[k] = v; merged++; }   /* 合并取较高状态，不回退已有进度 */
+        }
+        saveState();
+        try { localStorage.setItem(MIGRATION_KEY, '1'); } catch (e2) {}
+        renderAll();
+        alert('导入完成：更新 ' + merged + ' 条进度，当前共 ' + Object.keys(collectProgress()).length + ' 条记录。');
+      } catch (err) {
+        alert('导入失败：这不是本程序的进度备份（' + (err && err.message ? err.message : '解析错误') + '）');
+      } finally {
+        importFile.value = '';
+      }
+    };
+    reader.onerror = function () { alert('读取文件失败，请重试'); importFile.value = ''; };
+    reader.readAsText(f);
   });
 }
 
